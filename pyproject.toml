@@ -1,0 +1,60 @@
+[project]
+name = "restipy"
+version = "0.1.0"
+description = "A minimalist Python WSGI framework for quick development of RESTful APIs."
+authors = [
+  {name = "Lucas Santana", email = "lsfratel@gmail.com"},
+]
+dependencies = []
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.scripts]
+dev = "gunicorn --reload src.tests.test_app.wsgi"
+test = "python -m coverage run -m unittest"
+coverage = "python -m coverage"
+tc = { composite = ["test", "coverage html"] }
+
+[tool.pdm.dev-dependencies]
+lint = ["ruff"]
+test = ["gunicorn", "webtest", "coverage", "snakeviz"]
+
+[tool.ruff]
+line-length = 79
+
+ignore = [
+  "E501",
+  "B008",
+  "C901",
+]
+
+select = [
+  "E",
+  "W",
+  "F",
+  "I",
+  "C",
+  "B",
+]
+
+[tool.ruff.lint]
+ignore = [
+  "B006",
+  "B010",
+  "B009"
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
