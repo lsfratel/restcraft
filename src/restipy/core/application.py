@@ -7,6 +7,7 @@ import typing as t
 from types import ModuleType
 
 from restipy.core.exceptions import HTTPException, RestiPyException
+from restipy.core.middleware import BaseMiddleware
 from restipy.core.request import Request
 from restipy.core.response import Response
 from restipy.core.view import BaseView
@@ -87,17 +88,14 @@ class RestiPy:
     def _import_middleware(self, middleware: str):
         module = self._import_module(middleware)
         for _, member in self._get_module_members(module):
+            if not issubclass(member, BaseMiddleware):
+                continue
             self.add_middleware(member())
 
     def add_middleware(self, middleware):
-        if hasattr(middleware, 'before_route'):
-            self._before_route_m.append(middleware.before_route)
-
-        if hasattr(middleware, 'before_handler'):
-            self._before_m.append(middleware.before_handler)
-
-        if hasattr(middleware, 'after_handler'):
-            self._after_m.append(middleware.after_handler)
+        self._before_route_m.append(middleware.before_route)
+        self._before_m.append(middleware.before_handler)
+        self._after_m.append(middleware.after_handler)
 
     def match(
         self, path: str, method: str
