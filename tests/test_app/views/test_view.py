@@ -32,12 +32,3 @@ class TestMaxBodyView(BaseView):
 
     def handler(self, req: Request) -> Response:
         return Response(body=req.json)
-
-    def on_exception(self, req: Request, exc: Exception) -> Response:
-        if isinstance(exc, HTTPException):
-            return Response(
-                exc.get_response(),
-                status_code=exc.status_code,
-                headers=exc.headers,
-            )
-        return super().on_exception(req, exc)

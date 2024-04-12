@@ -1,5 +1,6 @@
 import typing as t
 
+from restipy.core.exceptions import HTTPException
 from restipy.core.request import Request
 from restipy.core.response import Response
 
@@ -20,6 +21,12 @@ class BaseView:
         raise NotImplementedError
 
     def on_exception(self, req: Request, exc: Exception) -> Response:
+        if isinstance(exc, HTTPException):
+            return Response(
+                exc.get_response(),
+                status_code=exc.status_code,
+                headers=exc.headers,
+            )
         return Response(
             body={'error': 'Internal Server Error.'}, status_code=500
         )
