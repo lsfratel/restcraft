@@ -16,15 +16,6 @@ class TestRaiseHTTPErrorView(BaseView):
     def handler(self, req: Request) -> Response:
         raise HTTPException('http-error', status_code=422)
 
-    def on_exception(self, req: Request, exc: Exception) -> Response:
-        if isinstance(exc, HTTPException):
-            return Response(
-                exc.get_response(),
-                status_code=exc.status_code,
-                headers=exc.headers,
-            )
-        return super().on_exception(req, exc)
-
 
 class TestMaxBodyView(BaseView):
     route = r'^/test-max-body$'
