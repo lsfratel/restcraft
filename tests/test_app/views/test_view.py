@@ -1,25 +1,43 @@
-from restipy.core.request import Request
-from restipy.core.response import Response
-from restipy.utils.helpers import re_route
-from test_app.exceptions.http_exc import HTTPException
+from restipy.core import BaseView, HTTPException, Request, Response
 
 
-class TestView:
-    routes = [
-        re_route('GET', r'^/test-handler-return$', 'test_return'),
-        re_route('GET', r'^/raise-http-error$', 'raise_http_error'),
-        re_route('GET', r'^/raise-exception$', 'raise_exception'),
-        re_route('POST', r'^/test-max-body', 'test_max_body'),
-    ]
+class TestHandlerReturnView(BaseView):
+    route = r'^/test-handler-return$'
+    methods = ['GET']
 
-    def test_return(self, req: Request):
-        return {'message': 'this will throw'}
+    def handler(self, req: Request) -> Response:
+        return {'message': 'this will throw'}  # type: ignore
 
-    def raise_http_error(self, req: Request):
+
+class TestRaiseHTTPErrorView(BaseView):
+    route = r'^/raise-http-error$'
+    methods = ['GET']
+
+    def handler(self, req: Request) -> Response:
         raise HTTPException('http-error', status_code=422)
 
-    def raise_exception(self, req: Request):
-        _ = 1 / 0
+    def on_exception(self, req: Request, exc: Exception) -> Response:
+        if isinstance(exc, HTTPException):
+            return Response(
+                exc.get_response(),
+                status_code=exc.status_code,
+                headers=exc.headers,
+            )
+        return super().on_exception(req, exc)
 
-    def test_max_body(self, req: Request):
+
+class TestMaxBodyView(BaseView):
+    route = r'^/test-max-body$'
+    methods = ['POST', 'PUT', 'PATCH']
+
+    def handler(self, req: Request) -> Response:
         return Response(body=req.json)
+
+    def on_exception(self, req: Request, exc: Exception) -> Response:
+        if isinstance(exc, HTTPException):
+            return Response(
+                exc.get_response(),
+                status_code=exc.status_code,
+                headers=exc.headers,
+            )
+        return super().on_exception(req, exc)

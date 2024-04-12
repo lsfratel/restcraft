@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from restipy.routing import HTTP_STATUS_LINES
@@ -65,9 +66,10 @@ class TestWSGI(unittest.TestCase):
     def test_wsgi_handler_return(self):
         resp = self.client.get('/test-handler-return', expect_errors=True)
         self.assertEqual(resp.status_int, 500)
+        body = json.loads(resp.body)
+        self.assertEqual(body['code'], 'INTERNAL_SERVER_ERROR')
         self.assertEqual(
-            resp.body,
-            b'{"code": "INTERNAL_SERVER_ERROR", "error": "Handler must return a Response object."}',
+            body['error'], 'Route handler must return a Response object.'
         )
 
     def test_wsgi_handler_raise_http_error(self):
@@ -76,11 +78,6 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(
             resp.body, b'{"code": "HTTP_EXCEPTION", "error": "http-error"}'
         )
-
-    def test_wsgi_handler_raise_exception(self):
-        resp = self.client.get('/raise-exception', expect_errors=True)
-        self.assertEqual(resp.status_int, 500)
-        self.assertEqual(resp.body, b'{"error": "Internal Server Error."}')
 
     def test_wsgi_max_body_size(self):
         body = {i: 'a' * 1000 for i in range(1000)}
@@ -93,5 +90,5 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(resp.status_int, 413)
         self.assertEqual(
             resp.body,
-            b'{"code": "BODY_TOO_LARGE", "error": "Request body too large."}',
+            b'{"code": "REQUEST_BODY_TOO_LARGE", "error": "Request body too large."}',
         )

@@ -1,15 +1,14 @@
 import typing as t
 
-from restipy.core.exceptions import BaseResponseException
-from restipy.core.response import Response
+from restipy.core import HTTPException
 
 
-class HTTPException(BaseResponseException):
-    code: t.Union[int, str] = 'HTTP_EXCEPTION'
+class CustomException(HTTPException):
+    code: t.Union[int, str] = 'CUSTOM_EXCEPTION'
 
-    def to_response(self):
-        return Response(
-            body={'code': self.code, 'error': self.message},
-            status=self.status_code,
-            headers=self.headers,
-        )
+    def get_response(self):
+        return {
+            'code': self.code,
+            'error': self.message,
+            'custom': 'custom-exception',
+        }

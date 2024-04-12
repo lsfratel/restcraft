@@ -4,10 +4,7 @@ import json
 import typing as t
 from urllib.parse import parse_qs, urljoin
 
-from restipy.core.exceptions import (
-    MalformedBodyException,
-    RequestBodyTooLargeException,
-)
+from restipy.core.exceptions import HTTPException
 from restipy.utils.helpers import env_to_h
 
 if t.TYPE_CHECKING:
@@ -29,11 +26,19 @@ class Request:
             return None
         max_body_size = self.app.config.MAX_BODY_SIZE
         if self.content_length > max_body_size:
-            raise RequestBodyTooLargeException('Request body too large.')
+            raise HTTPException(
+                'Request body too large.',
+                status_code=413,
+                code='REQUEST_BODY_TOO_LARGE',
+            )
         max_read = max(self.content_length, max_body_size)
         body = self.env['wsgi.input'].read(max_read + 1)
         if len(body) > max_read:
-            raise RequestBodyTooLargeException('Request body too large.')
+            raise HTTPException(
+                'Request body too large.',
+                status_code=413,
+                code='REQUEST_BODY_TOO_LARGE',
+            )
         return body
 
     @property
@@ -59,8 +64,8 @@ class Request:
         try:
             self._body = json.loads(b)
         except Exception as e:
-            raise MalformedBodyException(
-                'Malformed JSON body.', status_code=400
+            raise HTTPException(
+                'Malformed JSON body.', status_code=400, code='MALFORMED_JSON'
             ) from e
         return self._body
 
@@ -74,8 +79,8 @@ class Request:
         try:
             self._body = parse_qs(b.decode())
         except Exception as e:
-            raise MalformedBodyException(
-                'Malformed form body.', status_code=400
+            raise HTTPException(
+                'Malformed JSON body.', status_code=400, code='MALFORMED_JSON'
             ) from e
         return self._body
 

@@ -10,7 +10,7 @@ class TestResponse(unittest.TestCase):
 
     def setUp(self) -> None:
         self.resp = Response(
-            body=self.data.copy(), status=404, headers=self.headers.copy()
+            body=self.data.copy(), status_code=404, headers=self.headers.copy()
         )
 
     def test_response_header_list(self):

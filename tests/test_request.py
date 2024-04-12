@@ -1,11 +1,8 @@
 import unittest
 from io import BytesIO
 
-from restipy.core.exceptions import (
-    MalformedBodyException,
-    RequestBodyTooLargeException,
-)
-from restipy.core.request import Request
+from restipy.core import Request
+from restipy.core.exceptions import HTTPException
 
 
 class Settings:
@@ -57,13 +54,13 @@ class TestRequest(unittest.TestCase):
 
     def test_request_json_body_error(self):
         self.req.env['wsgi.input'] = BytesIO(b'error')
-        with self.assertRaises(MalformedBodyException) as e:
+        with self.assertRaises(HTTPException) as e:
             _ = self.req.json
-        resp = e.exception.to_response()
-        self.assertEqual(resp.status, 400)
+        resp = e.exception
+        self.assertEqual(resp.status_code, 400)
         self.assertDictEqual(
-            resp.data,
-            {'code': 'MALFORMED_BODY', 'error': 'Malformed JSON body.'},
+            resp.get_response(),
+            {'code': 'MALFORMED_JSON', 'error': 'Malformed JSON body.'},
         )
 
     def test_request_form_body(self):
@@ -132,11 +129,14 @@ class TestRequest(unittest.TestCase):
 
     def test_request_max_body_size(self):
         self.req.app.config.MAX_BODY_SIZE = 10  # type: ignore
-        with self.assertRaises(RequestBodyTooLargeException) as e:
+        with self.assertRaises(HTTPException) as e:
             _ = self.req.json
-        resp = e.exception.to_response()
-        self.assertEqual(resp.status, 413)
+        resp = e.exception
+        self.assertEqual(resp.status_code, 413)
         self.assertDictEqual(
-            resp.data,
-            {'code': 'BODY_TOO_LARGE', 'error': 'Request body too large.'},
+            resp.get_response(),
+            {
+                'code': 'REQUEST_BODY_TOO_LARGE',
+                'error': 'Request body too large.',
+            },
         )

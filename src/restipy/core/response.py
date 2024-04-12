@@ -32,10 +32,10 @@ class BaseResponse:
     }
 
     def __init__(
-        self, body: t.Any, status=200, headers: dict[str, t.Any] = {}
+        self, body: t.Any, *, status_code=200, headers: dict[str, t.Any] = {}
     ) -> None:
         self._body = body
-        self._status = status
+        self._status = status_code
         self._headers = self.default_headers.copy()
         self.json_dumps = json.dumps
         self.json_loads = json.loads

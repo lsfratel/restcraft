@@ -1,7 +1,6 @@
 import re
 
-from restipy.core.request import Request
-from restipy.core.response import Response
+from restipy.core import Request, Response
 
 
 class TestMiddleware:

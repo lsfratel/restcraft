@@ -1,17 +1,25 @@
-from restipy.core.request import Request
-from restipy.core.response import Response
-from restipy.utils.helpers import re_route
+from restipy.core import BaseView, Request, Response
 
 
-class TestView:
-    routes = [
-        re_route('GET', r'^/before-route-early$', 'on_early'),
-        re_route('GET', r'^/before-handler-early$', 'on_early'),
-        re_route('GET', r'^/after-handler$', 'after_handler'),
-    ]
+class TestMiddlewareBeforeRouteEarlyReturn(BaseView):
+    route = r'^/before-route-early$'
+    methods = ['GET']
 
-    def on_early(self, req: Request) -> Response:
+    def handler(self, req: Request) -> Response:
         return Response({'message': 'did not return early'})
 
-    def after_handler(self, req: Request) -> Response:
+
+class TestMiddlewareBeforeHandlerEarlyReturn(BaseView):
+    route = r'^/before-handler-early$'
+    methods = ['GET']
+
+    def handler(self, req: Request) -> Response:
+        return Response({'message': 'did not return early'})
+
+
+class TestMiddlewareAfterHandler(BaseView):
+    route = r'^/after-handler$'
+    methods = ['GET']
+
+    def handler(self, req: Request) -> Response:
         return Response({'message': 'message in view'})

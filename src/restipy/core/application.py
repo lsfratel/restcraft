@@ -6,14 +6,10 @@ import traceback
 import typing as t
 from types import ModuleType
 
-from restipy.core.exceptions import (
-    BaseResponseException,
-    InternalServerErrorException,
-    RestiPyException,
-    RouteNotFoundException,
-)
+from restipy.core.exceptions import HTTPException, RestiPyException
 from restipy.core.request import Request
 from restipy.core.response import Response
+from restipy.core.view import BaseView
 from restipy.routing.router import Route
 
 
@@ -35,11 +31,27 @@ class RestiPy:
         for middleware in settings.MIDDLEWARES:
             self._import_middleware(middleware)
 
-    def _add_route(self, rule: str, method: str, handler: t.Callable) -> None:
-        if method.upper() not in self._routes:
-            self._routes[method.upper()] = []
-        self._routes[method.upper()].append(
-            Route(re.compile(rule), method, handler)
+    def _add_route(
+        self,
+        rule: str,
+        method: str,
+        handler: t.Callable,
+        before: t.Callable,
+        after: t.Callable,
+        on_exception: t.Callable,
+    ) -> None:
+        method = method.upper()
+        if method not in self._routes:
+            self._routes[method] = []
+        self._routes[method].append(
+            Route(
+                rule=re.compile(rule),
+                method=method,
+                handler=handler,
+                before=before,
+                after=after,
+                on_exception=on_exception,
+            )
         )
 
     def _import_module(self, filename: str) -> ModuleType:
@@ -54,19 +66,23 @@ class RestiPy:
 
     def _import_view(self, view: str):
         module = self._import_module(view)
-        for name, member in self._get_module_members(module):
-            instance = member()
-            routes = getattr(instance, 'routes')
-            if routes is None:
+        for _, mview in self._get_module_members(module):
+            if not issubclass(mview, BaseView):
                 continue
-            for route in routes:
-                method, rule, hname = route
-                handler = getattr(instance, hname)
-                if not handler:
-                    raise RestiPyException(
-                        f'View {name} is missing {hname} route handler.'
-                    )
-                self._add_route(rule, method, handler)
+            instance = mview()
+            route = getattr(instance, 'route', None)
+            methods = getattr(instance, 'methods', [])
+            if not route or not methods:
+                continue
+            for method in methods:
+                self._add_route(
+                    route,
+                    method,
+                    instance.handler,
+                    instance.before,
+                    instance.after,
+                    instance.on_exception,
+                )
 
     def _import_middleware(self, middleware: str):
         module = self._import_module(middleware)
@@ -94,7 +110,9 @@ class RestiPy:
             for route in routes:
                 if match := route.match(path):
                     return route, match.groupdict()
-        raise RouteNotFoundException('Route not found.')
+        raise HTTPException(
+            'Route not found.', status_code=404, code='ROUTE_NOT_FOUND'
+        )
 
     def __call__(
         self, env: dict, start_response: t.Callable
@@ -117,41 +135,69 @@ class RestiPy:
     def process_request(self, env: dict) -> Response:
         env['restipy.app'] = self
         req = Request(env)
+        out: Response
 
         try:
             for middleware in self._before_route_m:
-                resp = middleware(req)
-                if isinstance(resp, Response):
-                    return resp
+                out = middleware(req)
+                if isinstance(out, Response):
+                    return out
 
-            try:
-                route, params = self.match(req.path, req.method)
-            except RouteNotFoundException as e:
-                return e.to_response()
+            route, params = self.match(req.path, req.method)
 
             req.set_params = params
 
             for middleware in self._before_m:
-                resp = middleware(req)
-                if isinstance(resp, Response):
-                    return resp
+                out = middleware(req)
+                if isinstance(out, Response):
+                    return out
 
-            resp = route.handler(req)
-
-            if not isinstance(resp, Response):
-                raise InternalServerErrorException(
-                    'Handler must return a Response object.'
-                )
+            try:
+                out = route.before(req)
+                if isinstance(out, Response):
+                    return out
+                out = route.handler(req)
+                if not isinstance(out, Response):
+                    raise Exception(
+                        'Route handler must return a Response object.'
+                    )
+                route.after(req, out)
+            except RestiPyException as e:
+                out = route.on_exception(req, e)
+                if not isinstance(out, Response):
+                    raise HTTPException(
+                        'Route exception must return Response object.',
+                        code='HANDLER_EXCEPTION',
+                        status_code=500,
+                    ) from None
+                return out
 
             for middleware in self._after_m:
-                middleware(req, resp)
+                middleware(req, out)
 
-            return resp
-        except BaseResponseException as e:
-            return e.to_response()
-        except Exception:
+            return out
+        except HTTPException as e:
+            return Response(
+                e.get_response(), status_code=e.status_code, headers=e.headers
+            )
+        except Exception as e:
             traceback.print_exc()
             stacktrace = traceback.format_exc()
             env['wsgi.errors'].write(stacktrace)
             env['wsgi.errors'].flush()
-            return Response({'error': 'Internal Server Error.'}, 500)
+            if self.config.DEBUG is False:
+                return Response(
+                    {
+                        'code': 'INTERNAL_SERVER_ERROR',
+                        'error': 'Something went wrong, try again later',
+                    },
+                    status_code=500,
+                )
+            return Response(
+                {
+                    'code': 'INTERNAL_SERVER_ERROR',
+                    'error': str(e),
+                    'stacktrace': stacktrace.splitlines(),
+                },
+                status_code=500,
+            )
