@@ -1,6 +1,7 @@
 import json
 import typing as t
 
+from restipy.core.exceptions import RestiPyException
 from restipy.routing import HTTP_CODES, HTTP_STATUS_LINES
 from restipy.utils.helpers import pep3333
 
@@ -65,7 +66,7 @@ class BaseResponse:
     @status.setter
     def set_status(self, status: int):
         if status not in HTTP_CODES:
-            raise Exception('Invalid status code.')
+            raise RestiPyException('Invalid status code.')
         self._status = status
 
     @property
