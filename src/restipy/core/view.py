@@ -28,5 +28,12 @@ class BaseView:
                 headers=exc.headers,
             )
         return Response(
-            body={'error': 'Internal Server Error.'}, status_code=500
+            {
+                'code': 'INTERNAL_SERVER_ERROR',
+                'error': 'Something went wrong, try again later.',
+            },
+            status_code=500,
         )
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} {self.route} {self.methods}>'

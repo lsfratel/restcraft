@@ -30,3 +30,6 @@ class Route:
 
     def match(self, path: str) -> t.Match[str] | None:
         return self.rule.match(path)
+
+    def __repr__(self) -> str:
+        return f'<Route {self.method} {self.rule.pattern}>'

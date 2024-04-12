@@ -187,7 +187,7 @@ class RestiPy:
                 return Response(
                     {
                         'code': 'INTERNAL_SERVER_ERROR',
-                        'error': 'Something went wrong, try again later',
+                        'error': 'Something went wrong, try again later.',
                     },
                     status_code=500,
                 )
