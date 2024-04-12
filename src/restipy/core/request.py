@@ -15,13 +15,14 @@ if t.TYPE_CHECKING:
 
 
 class Request:
-    __slots__ = ('env', '_params', '_body', '_headers')
+    __slots__ = ('_params', '_body', '_headers', 'env', 'ctx')
 
     def __init__(self, environ: dict, params: dict = {}) -> None:
         self.env = environ
         self._params = params
         self._body: t.Any = None
         self._headers: t.Any = None
+        self.ctx: dict[str, t.Any] = {}
 
     def _read_body(self) -> None | bytes:
         if self.method not in ('POST', 'PUT', 'PATCH'):
