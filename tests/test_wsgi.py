@@ -54,15 +54,15 @@ class TestWSGI(unittest.TestCase):
         resp = self.client.get('/before-route-early')
         self.assertEqual(resp.body, b'{"message": "early return"}')
 
-    def test_middleware_before_handler_early_return(self):
+    def test_wsgi_middleware_before_handler_early_return(self):
         resp = self.client.get('/before-handler-early')
         self.assertEqual(resp.body, b'{"message": "early return"}')
 
-    def test_middleware_after_handler(self):
+    def test_wsgi_middleware_after_handler(self):
         resp = self.client.get('/after-handler')
         self.assertEqual(resp.body, b'{"message": "changed in middleware"}')
 
-    def test_handler_return(self):
+    def test_wsgi_handler_return(self):
         resp = self.client.get('/test-handler-return', expect_errors=True)
         self.assertEqual(resp.status_int, 500)
         self.assertEqual(
@@ -70,14 +70,28 @@ class TestWSGI(unittest.TestCase):
             b'{"code": "INTERNAL_SERVER_ERROR", "error": "Handler must return a Response object."}',
         )
 
-    def test_handler_raise_http_error(self):
+    def test_wsgi_handler_raise_http_error(self):
         resp = self.client.get('/raise-http-error', expect_errors=True)
         self.assertEqual(resp.status_int, 422)
         self.assertEqual(
             resp.body, b'{"code": "HTTP_EXCEPTION", "error": "http-error"}'
         )
 
-    def test_handler_raise_exception(self):
+    def test_wsgi_handler_raise_exception(self):
         resp = self.client.get('/raise-exception', expect_errors=True)
         self.assertEqual(resp.status_int, 500)
         self.assertEqual(resp.body, b'{"error": "Internal Server Error."}')
+
+    def test_wsgi_max_body_size(self):
+        body = {i: 'a' * 1000 for i in range(1000)}
+        resp = self.client.post(
+            '/test-max-body',
+            body,  # type: ignore
+            content_type='application/json',
+            expect_errors=True,
+        )
+        self.assertEqual(resp.status_int, 413)
+        self.assertEqual(
+            resp.body,
+            b'{"code": "BODY_TOO_LARGE", "error": "Request body too large."}',
+        )

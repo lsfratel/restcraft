@@ -8,7 +8,7 @@ from types import ModuleType
 
 from restipy.core.exceptions import (
     BaseResponseException,
-    InternalServerError,
+    InternalServerErrorException,
     RestiPyException,
     RouteNotFoundException,
 )
@@ -20,17 +20,14 @@ from restipy.routing.router import Route
 class RestiPy:
     def __init__(self) -> None:
         self._routes: dict[str, list[Route]] = {}
+        self.config: ModuleType
 
         self._before_route_m: list[t.Callable] = []
         self._before_m: list[t.Callable] = []
         self._after_m: list[t.Callable] = []
 
     def bootstrap(self, settings: ModuleType):
-        if not hasattr(settings, 'VIEWS'):
-            raise RestiPyException('VIEWS setting is missing.')
-
-        if not hasattr(settings, 'MIDDLEWARES'):
-            raise RestiPyException('MIDDLEWARES setting is missing.')
+        self.config = settings
 
         for view in settings.VIEWS:
             self._import_view(view)
@@ -115,7 +112,7 @@ class RestiPy:
         if method == 'HEAD':
             return []
 
-        return [data]
+        yield data
 
     def process_request(self, env: dict) -> Response:
         env['restipy.app'] = self
@@ -142,7 +139,7 @@ class RestiPy:
             resp = route.handler(req)
 
             if not isinstance(resp, Response):
-                raise InternalServerError(
+                raise InternalServerErrorException(
                     'Handler must return a Response object.'
                 )
 

@@ -4,7 +4,10 @@ import json
 import typing as t
 from urllib.parse import parse_qs, urljoin
 
-from restipy.core.exceptions import MalformedBodyException
+from restipy.core.exceptions import (
+    MalformedBodyException,
+    RequestBodyTooLargeException,
+)
 from restipy.utils.helpers import env_to_h
 
 if t.TYPE_CHECKING:
@@ -21,15 +24,15 @@ class Request:
         self._headers: t.Any = None
 
     def _read_body(self) -> None | bytes:
-        read = self.env['wsgi.input'].read
-        body = read(1)
-        if not body:
+        if self.method not in ('POST', 'PUT', 'PATCH'):
             return None
-        while True:
-            c = read(24)
-            if not c:
-                break
-            body += c
+        max_body_size = self.app.config.MAX_BODY_SIZE
+        if self.content_length > max_body_size:
+            raise RequestBodyTooLargeException('Request body too large.')
+        max_read = max(self.content_length, max_body_size)
+        body = self.env['wsgi.input'].read(max_read + 1)
+        if len(body) > max_read:
+            raise RequestBodyTooLargeException('Request body too large.')
         return body
 
     @property
@@ -46,31 +49,34 @@ class Request:
 
     @property
     def json(self) -> dict[str, t.Any] | None:
-        if self._body is None:
-            body = self._read_body()
-            if body is None:
-                return body
-            try:
-                body = json.loads(body)
-                self._body = body
-            except json.JSONDecodeError as e:
-                raise MalformedBodyException(
-                    'Malformed JSON body.', status_code=400
-                ) from e
-            except Exception:
-                raise
+        ctype = self.content_type.lower().split(';')[0]
+        if ctype not in ('application/json', 'application/json-rpc'):
+            return None
+        b = self._read_body()
+        if not b:
+            return None
+        try:
+            self._body = json.loads(b)
+        except Exception as e:
+            raise MalformedBodyException(
+                'Malformed JSON body.', status_code=400
+            ) from e
         return self._body
-
-    @json.setter
-    def set_json(self, body: dict[str, t.Any]):
-        self._body = body
 
     @property
     def form(self) -> dict[str, list[t.Any]] | None:
-        body = self._read_body()
-        if body is None:
-            return body
-        return parse_qs(body.decode())
+        if self.content_type.startswith('multipart/'):
+            return None
+        b = self._read_body()
+        if b is None:
+            return None
+        try:
+            self._body = parse_qs(b.decode())
+        except Exception as e:
+            raise MalformedBodyException(
+                'Malformed form body.', status_code=400
+            ) from e
+        return self._body
 
     @property
     def header(self) -> dict[str, str]:
@@ -123,11 +129,8 @@ class Request:
         return None
 
     @property
-    def length(self) -> int | None:
-        length = self.env.get('CONTENT_LENGTH')
-        if length:
-            return int(length)
-        return length
+    def content_length(self) -> int:
+        return int(self.env.get('CONTENT_LENGTH', '0'))
 
     @property
     def protocol(self) -> str:
@@ -145,5 +148,5 @@ class Request:
         return accept
 
     @property
-    def content_type(self) -> str | None:
-        return self.env.get('CONTENT_TYPE')
+    def content_type(self) -> str:
+        return self.env.get('CONTENT_TYPE', '')

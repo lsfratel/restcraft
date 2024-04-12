@@ -1,10 +1,19 @@
 import unittest
 from io import BytesIO
 
-from restipy.core.exceptions import MalformedBodyException
+from restipy.core.exceptions import (
+    MalformedBodyException,
+    RequestBodyTooLargeException,
+)
 from restipy.core.request import Request
 
-app = object()
+
+class Settings:
+    MAX_BODY_SIZE = 24 * 1024
+
+
+class App:
+    config = Settings()
 
 
 class TestRequest(unittest.TestCase):
@@ -19,7 +28,7 @@ class TestRequest(unittest.TestCase):
         'HTTP_HOST': 'localhost:8080',
         'HTTP_ACCEPT': '*/*',
         'QUERY_STRING': 'a=1&name=lucas',
-        'restipy.app': app,
+        'restipy.app': App(),
         'wsgi.input': BytesIO(b'{"firstname": "john", "lastname": "doe"}'),
         'wsgi.url_scheme': 'http',
     }
@@ -41,15 +50,10 @@ class TestRequest(unittest.TestCase):
 
     def test_request_app(self):
         self.assertIsInstance(self.req.app, object)
-        self.assertEqual(self.req.app, app)
 
     def test_request_json_body(self):
         body = {'firstname': 'john', 'lastname': 'doe'}
         self.assertDictEqual(self.req.json, body)  # type: ignore
-
-    def test_request_set_json_body(self):
-        self.req.set_json = {'new_dict': True}
-        self.assertDictEqual(self.req.json, {'new_dict': True})  # type: ignore
 
     def test_request_json_body_error(self):
         self.req.env['wsgi.input'] = BytesIO(b'error')
@@ -105,9 +109,9 @@ class TestRequest(unittest.TestCase):
         charset = 'utf-8'
         self.assertEqual(self.req.charset, charset)
 
-    def test_request_length(self):
+    def test_request_content_length(self):
         length = len(b'{"firstname": "john", "lastname": "doe"}')
-        self.assertEqual(self.req.length, length)
+        self.assertEqual(self.req.content_length, length)
 
     def test_request_protocol(self):
         protocol = 'HTTP'
@@ -125,3 +129,14 @@ class TestRequest(unittest.TestCase):
     def test_request_content_type(self):
         content_type = 'application/json; charset=utf-8'
         self.assertEqual(self.req.content_type, content_type)
+
+    def test_request_max_body_size(self):
+        self.req.app.config.MAX_BODY_SIZE = 10  # type: ignore
+        with self.assertRaises(RequestBodyTooLargeException) as e:
+            _ = self.req.json
+        resp = e.exception.to_response()
+        self.assertEqual(resp.status, 413)
+        self.assertDictEqual(
+            resp.data,
+            {'code': 'BODY_TOO_LARGE', 'error': 'Request body too large.'},
+        )
