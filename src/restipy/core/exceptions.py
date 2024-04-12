@@ -8,7 +8,7 @@ class RestiPyException(Exception):
 class HTTPException(RestiPyException):
     """Base exception class for HTTP errors."""
 
-    __slots__ = ('message', 'status_code', 'headers', 'code')
+    __slots__ = ('message', 'status_code', 'headers', 'code', 'error')
 
     default_code: t.Union[int, str] = 'HTTP_EXCEPTION'
     default_status_code: int = 500
@@ -36,3 +36,6 @@ class HTTPException(RestiPyException):
             body['error'] = self.error
 
         return body
+
+    def __repr__(self) -> str:
+        return f'<HTTPException {self.code!r} {self.message!r}>'

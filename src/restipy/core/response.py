@@ -88,6 +88,9 @@ class BaseResponse:
         headers = self.header_list
         return (data, status, headers)
 
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__} {self.status_line}>'
+
 
 class Response(BaseResponse):
     default_headers = {'content-type': 'application/json; charset=utf-8'}

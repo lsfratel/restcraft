@@ -156,3 +156,6 @@ class Request:
     @property
     def content_type(self) -> str:
         return self.env.get('CONTENT_TYPE', '')
+
+    def __repr__(self) -> str:
+        return f'<Request {self.method} {self.path}>'
