@@ -76,7 +76,7 @@ class TestWSGI(unittest.TestCase):
         resp = self.client.get('/raise-http-error', expect_errors=True)
         self.assertEqual(resp.status_int, 422)
         self.assertEqual(
-            resp.body, b'{"code": "HTTP_EXCEPTION", "error": "http-error"}'
+            resp.body, b'{"code": "HTTP_EXCEPTION", "message": "http-error"}'
         )
 
     def test_wsgi_max_body_size(self):
@@ -91,5 +91,5 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(
             resp.body,
             b'{"code": "REQUEST_BODY_TOO_LARGE",'
-            b' "error": "Request body too large."}',
+            b' "message": "Request body too large."}',
         )

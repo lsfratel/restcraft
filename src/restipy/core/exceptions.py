@@ -17,8 +17,9 @@ class HTTPException(RestiPyException):
         self,
         message: str,
         *,
-        headers: dict = {},
         status_code: t.Optional[int] = None,
+        headers: dict = {},
+        error: t.Optional[t.Any] = None,
         code: t.Optional[t.Union[int, str]] = None,
     ) -> None:
         super().__init__(message)
@@ -26,6 +27,12 @@ class HTTPException(RestiPyException):
         self.headers = headers
         self.status_code = status_code or self.default_status_code
         self.code = code or self.default_code
+        self.error = error
 
     def get_response(self):
-        return {'code': self.code, 'error': self.message}
+        body = {'code': self.code, 'message': self.message}
+
+        if self.error:
+            body['error'] = self.error
+
+        return body

@@ -60,7 +60,7 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertDictEqual(
             resp.get_response(),
-            {'code': 'MALFORMED_JSON', 'error': 'Malformed JSON body.'},
+            {'code': 'MALFORMED_JSON', 'message': 'Malformed JSON body.'},
         )
 
     def test_request_form_body(self):
@@ -137,6 +137,6 @@ class TestRequest(unittest.TestCase):
             resp.get_response(),
             {
                 'code': 'REQUEST_BODY_TOO_LARGE',
-                'error': 'Request body too large.',
+                'message': 'Request body too large.',
             },
         )
