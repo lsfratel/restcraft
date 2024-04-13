@@ -66,9 +66,7 @@ class RestiPy:
 
         self._routes: dict[str, list[View]] = {}
 
-        self._before_route_m: list[t.Callable] = []
-        self._before_m: list[t.Callable] = []
-        self._after_m: list[t.Callable] = []
+        self._middlewares: list[Middleware] = []
 
     def bootstrap(self, settings: ModuleType):
         """
@@ -183,9 +181,7 @@ class RestiPy:
         The middleware will be executed in the order they are added, before and
         after the route handlers.
         """
-        self._before_route_m.append(middleware.before_route)
-        self._before_m.append(middleware.before_handler)
-        self._after_m.append(middleware.after_handler)
+        self._middlewares.append(middleware)
 
     def match(
         self, path: str, method: str
@@ -281,57 +277,34 @@ class RestiPy:
 
         try:
             """
-            Process the incoming request through any registered middleware
-            before routing the request.
+            Iterates through the registered middleware components and calls
+            the `before_route` method on each one.
 
-            The middleware is executed in the order they were registered.
-            If any middleware returns a `Response` object, the request
-            processing is short-circuited and the response is returned
-            immediately.
-
-            Args:
-                `req (Request):` The incoming request object.
-
-            Returns:
-                `Response:` The response object, if a middleware returned one.
+            If any middleware component returns a `Response` object, it is
+            immediately returned, short-circuiting the request processing.
             """
-            for middleware in self._before_route_m:
-                out = middleware(req)
+            for middleware in self._middlewares:
+                out = middleware.before_route(req)
                 if isinstance(out, Response):
                     return out
 
             """
             Match the incoming request path and HTTP method to a registered
             route.
-
-            Args:
-                `req (Request):` The incoming request object.
-
-            Returns:
-                `Tuple[Route, dict]:` The matched route and any extracted
-                    parameters from the path.
             """
             view, params = self.match(req.path, req.method)
 
             req.set_params = params
 
             """
-            Process the incoming request through any registered middleware
-            before routing the request.
+            Iterates through the registered middleware components and calls
+            the `before_handler` method on each one.
 
-            The middleware is executed in the order they were registered.
-            If any middleware returns a `Response` object, the request
-            processing is short-circuited and the response is returned
-            immediately.
-
-            Args:
-                `req (Request):` The incoming request object.
-
-            Returns:
-                `Response:` The response object, if a middleware returned one.
+            If any middleware component returns a `Response` object, it is
+            immediately returned, short-circuiting the request processing.
             """
-            for middleware in self._before_m:
-                out = middleware(req)
+            for middleware in self._middlewares:
+                out = middleware.before_handler(req)
                 if isinstance(out, Response):
                     return out
 
@@ -366,8 +339,17 @@ class RestiPy:
                     ) from e
                 return out
 
-            for middleware in self._after_m:
-                middleware(req, out)
+            """
+            Iterates through the registered middleware components and calls
+            the `after_handler` method on each one.
+
+            This method is called after the view handler has executed and
+            returned a response. It allows middleware components to perform
+            any necessary post-processing or cleanup tasks before the response
+            is returned to the client.
+            """
+            for middleware in self._middlewares:
+                middleware.after_handler(req, out)
 
             return out
         except HTTPException as e:
