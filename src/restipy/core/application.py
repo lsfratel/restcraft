@@ -111,7 +111,7 @@ class RestiPy:
                 self._routes[method] = []
             self._routes[method].append(view)
 
-    def _import_module(self, filename: str) -> ModuleType:
+    def _import_module(self, module_path: str) -> ModuleType:
         """
         Import a module given its filename.
 
@@ -121,17 +121,21 @@ class RestiPy:
         Returns:
             `ModuleType:` The imported module.
         """
-        if os.path.sep in filename:
-            filename = filename.replace(os.path.sep, '.')
-        return importlib.import_module(filename)
+        if os.path.sep in module_path:
+            module_path = module_path.replace(os.path.sep, '.')
+
+        try:
+            return importlib.import_module(module_path)
+        except ModuleNotFoundError as e:
+            raise ImportError(f'Could not import module {module_path}.') from e
 
     def _get_module_members(self, module: ModuleType, mt=inspect.isclass):
         """
         Get the members of a module that satisfy a given condition.
 
         Args:
-            `module (ModuleType)`: The module to inspect.
-            `mt (Callable)`: The condition that the members should satisfy.
+            `module (ModuleType):` The module to inspect.
+            `mt (Callable):` The condition that the members should satisfy.
                 Defaults to `inspect.isclass`.
 
         Yields:
