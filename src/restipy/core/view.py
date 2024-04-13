@@ -9,9 +9,9 @@ if t.TYPE_CHECKING:
     from restipy.core.application import RestiPy
 
 
-class BaseView:
+class View:
     """
-    The `BaseView` class is the base class for all views in the Restipy
+    The `View` class is the base class for all views in the Restipy
     framework. It provides a set of methods that can be overridden by
     subclasses to handle different aspects of the request/response lifecycle.
 
@@ -36,7 +36,7 @@ class BaseView:
 
     def __init__(self, app: RestiPy) -> None:
         """
-        Initializes a new instance of the `BaseView` class.
+        Initializes a new instance of the `View` class.
         """
         self.app = app
 
@@ -91,6 +91,6 @@ class BaseView:
 
     def __repr__(self) -> str:
         """
-        Returns a string representation of the BaseView instance.
+        Returns a string representation of the View instance.
         """
         return f'<{self.__class__.__name__} {self.methods} {self.route}>'

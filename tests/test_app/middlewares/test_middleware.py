@@ -1,10 +1,10 @@
 import re
 
 from restipy.core import Request, Response
-from restipy.core.middleware import BaseMiddleware
+from restipy.core.middleware import Middleware
 
 
-class TestMiddleware(BaseMiddleware):
+class TestMiddleware(Middleware):
     rx_before_route = re.compile(r'^/before-route-early$')
     rx_before_handler = re.compile(r'^/before-handler-early$')
     rx_after_handler = re.compile(r'^/after-handler$')

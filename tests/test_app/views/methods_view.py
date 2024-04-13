@@ -1,7 +1,7 @@
-from restipy.core import BaseView, Request, Response
+from restipy.core import Request, Response, View
 
 
-class TestHTTPMethodsView(BaseView):
+class TestHTTPMethodsView(View):
     route = r'^/$'
     methods = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'HEAD']
 

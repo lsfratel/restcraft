@@ -1,7 +1,7 @@
-from restipy.core import BaseView, Request, Response
+from restipy.core import Request, Response, View
 
 
-class TestMiddlewareBeforeRouteEarlyReturn(BaseView):
+class TestMiddlewareBeforeRouteEarlyReturn(View):
     route = r'^/before-route-early$'
     methods = ['GET']
 
@@ -9,7 +9,7 @@ class TestMiddlewareBeforeRouteEarlyReturn(BaseView):
         return Response({'message': 'did not return early'})
 
 
-class TestMiddlewareBeforeHandlerEarlyReturn(BaseView):
+class TestMiddlewareBeforeHandlerEarlyReturn(View):
     route = r'^/before-handler-early$'
     methods = ['GET']
 
@@ -17,7 +17,7 @@ class TestMiddlewareBeforeHandlerEarlyReturn(BaseView):
         return Response({'message': 'did not return early'})
 
 
-class TestMiddlewareAfterHandler(BaseView):
+class TestMiddlewareAfterHandler(View):
     route = r'^/after-handler$'
     methods = ['GET']
 

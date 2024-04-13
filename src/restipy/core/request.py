@@ -111,8 +111,8 @@ class Request:
         'application/json'.
 
         Returns:
-            `dict or None:` The JSON body of the request, or None if the content
-                type is not 'application/json'.
+            `dict or None:` The JSON body of the request, or None if the
+                content type is not 'application/json'.
         """
         ctype = self.content_type.lower().split(';')[0]
         if ctype not in ('application/json', 'application/json-rpc'):
@@ -134,8 +134,8 @@ class Request:
         The form data of the request, if the content type is not 'multipart/'.
 
         Returns:
-            `dict or None:` The form data of the request, or None if the content
-                type is 'multipart/'.
+            `dict or None:` The form data of the request, or None if the
+                content type is 'multipart/'.
         """
         if self.content_type.startswith('multipart/'):
             return None
@@ -222,8 +222,8 @@ class Request:
         The query parameters of the request.
 
         Returns:
-            `dict or None:` The query parameters of the request, or None if there
-                are no query parameters.
+            `dict or None:` The query parameters of the request, or None if
+                there are no query parameters.
         """
         qs = self.env.get('QUERY_STRING')
         if qs is None:

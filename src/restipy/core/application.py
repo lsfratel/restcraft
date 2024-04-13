@@ -7,10 +7,10 @@ import typing as t
 from types import ModuleType
 
 from restipy.core.exceptions import HTTPException, RestiPyException
-from restipy.core.middleware import BaseMiddleware
+from restipy.core.middleware import Middleware
 from restipy.core.request import Request
 from restipy.core.response import Response
-from restipy.core.view import BaseView
+from restipy.core.view import View
 
 
 class RestiPy:
@@ -62,7 +62,7 @@ class RestiPy:
             `_after_m (list[Callable]):` A list of middleware functions to be
                 executed after a request is processed.
         """
-        self._routes: dict[str, list[BaseView]] = {}
+        self._routes: dict[str, list[View]] = {}
         self.config: ModuleType
 
         self._before_route_m: list[t.Callable] = []
@@ -88,7 +88,7 @@ class RestiPy:
 
     def _add_view(
         self,
-        view: BaseView,
+        view: View,
     ) -> None:
         view.route = re.compile(view.route)
         for method in view.methods:
@@ -137,7 +137,7 @@ class RestiPy:
         """
         module = self._import_module(view)
         for _, mview in self._get_module_members(module):
-            if not issubclass(mview, BaseView):
+            if not issubclass(mview, View):
                 continue
             self._add_view(mview(self))
 
@@ -151,16 +151,16 @@ class RestiPy:
         """
         module = self._import_module(middleware)
         for _, member in self._get_module_members(module):
-            if not issubclass(member, BaseMiddleware):
+            if not issubclass(member, Middleware):
                 continue
             self.add_middleware(member())
 
-    def add_middleware(self, middleware):
+    def add_middleware(self, middleware: Middleware):
         """
         Adds a middleware to the application.
 
-        Parameters:
-        - `middleware:` The middleware object to be added.
+        Args:
+            `middleware:` The middleware object to be added.
 
         This method adds the specified middleware to the application's list of
         middlewares.
@@ -174,7 +174,7 @@ class RestiPy:
 
     def match(
         self, path: str, method: str
-    ) -> tuple[BaseView, dict[str, str | t.Any]]:
+    ) -> tuple[View, dict[str, str | t.Any]]:
         """
         Matches the given path and method to a route in the application.
 

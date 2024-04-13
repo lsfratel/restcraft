@@ -2,9 +2,9 @@ from restipy.core.request import Request
 from restipy.core.response import Response
 
 
-class BaseMiddleware:
+class Middleware:
     """
-    The `BaseMiddleware` class provides a base implementation for middleware
+    The `Middleware` class provides a base implementation for middleware
     in the Restipy framework. Middleware is used to intercept and modify
     requests and responses before and after they are handled by the
     application.
