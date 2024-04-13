@@ -11,6 +11,7 @@ from restipy.core.middleware import Middleware
 from restipy.core.request import Request
 from restipy.core.response import Response
 from restipy.core.view import View
+from restipy.utils.helpers import ThreadSafeContext
 
 
 class RestiPy:
@@ -43,6 +44,8 @@ class RestiPy:
     executing any registered middleware and the matched view's handler.
     """
 
+    __slots__ = ('ctx', 'config', '_routes', '_middlewares')
+
     def __init__(self) -> None:
         """
         Initializes a new instance of the RestiPy class.
@@ -51,10 +54,11 @@ class RestiPy:
         routes, middleware, and configuration.
 
         Attributes:
-            `_routes (dict[str, list[Route]]):` A dictionary mapping HTTP
-                methods to lists of routes.
             `config (ModuleType):` The module containing the application
                 settings.
+            `ctx (ThreadSafeContext):` The application's context manager.
+            `_routes (dict[str, list[Route]]):` A dictionary mapping HTTP
+                methods to lists of routes.
             `_before_route_m (list[Callable]):` A list of middleware functions
                 to be executed before a route is matched.
             `_before_m (list[Callable]):` A list of middleware functions to be
@@ -62,6 +66,8 @@ class RestiPy:
             `_after_m (list[Callable]):` A list of middleware functions to be
                 executed after a request is processed.
         """
+        self.ctx = ThreadSafeContext()
+
         self.config: ModuleType
 
         self._routes: dict[str, list[View]] = {}
@@ -272,7 +278,7 @@ class RestiPy:
             `Exception:` If any other exception occurs.
         """
         env['restipy.app'] = self
-        req = Request(env)
+        self.ctx.request = req = Request(env)
         out: t.Optional[Response] = None
 
         try:
