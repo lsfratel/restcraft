@@ -62,8 +62,9 @@ class RestiPy:
             `_after_m (list[Callable]):` A list of middleware functions to be
                 executed after a request is processed.
         """
-        self._routes: dict[str, list[View]] = {}
         self.config: ModuleType
+
+        self._routes: dict[str, list[View]] = {}
 
         self._before_route_m: list[t.Callable] = []
         self._before_m: list[t.Callable] = []
@@ -90,7 +91,20 @@ class RestiPy:
         self,
         view: View,
     ) -> None:
-        view.route = re.compile(view.route)
+        """
+        Adds a view to the application's routing table.
+
+        Args:
+            `view (View):` The view to be added.
+
+        This method compiles the route pattern in the view, and then adds the
+        view to the appropriate list of routes based on the HTTP methods it
+        supports. If a list of routes for a particular HTTP method does not
+        yet exist, it is created.
+        """
+        if not isinstance(view.route, str):
+            view.route = re.compile(view.route)
+
         for method in view.methods:
             method = method.upper()
             if method not in self._routes:
