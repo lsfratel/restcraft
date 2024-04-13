@@ -1,40 +1,81 @@
+from __future__ import annotations
+
 import typing as t
 
-from restipy.core.exceptions import HTTPException
 from restipy.core.request import Request
 from restipy.core.response import Response
+
+if t.TYPE_CHECKING:
+    from restipy.core.application import RestiPy
 
 
 class BaseView:
     """
-    Base class for views in the REST framework.
+    The `BaseView` class is the base class for all views in the Restipy
+    framework. It provides a set of methods that can be overridden by
+    subclasses to handle different aspects of the request/response lifecycle.
+
+    The `before_handler` method is called before the request handler is
+    executed, and can be used for pre-processing the request.
+
+    The `after_handler` method is called after the request handler is
+    executed, and can be used for post-processing the response.
+
+    The `handler` method is the main request handler that must be implemented
+    by subclasses. It takes a `Request` object and returns a `Response` object.
+
+    The `on_exception` method is called when an exception is raised during
+    request handling. It can be used to handle specific exceptions and return
+    custom responses.
     """
 
-    __slots__ = ('route', 'methods')
+    __slots__ = ('route', 'methods', 'app')
 
-    route: str
+    route: t.Union[str, t.Pattern[str]]
     methods: list[str]
 
-    def before(self, req: Request) -> t.Optional[Response]:
+    def __init__(self, app: RestiPy) -> None:
+        """
+        Initializes a new instance of the `BaseView` class.
+        """
+        self.app = app
+
+    def before_handler(self, req: Request) -> t.Optional[Response]:
         """
         Method called before the request handler is executed.
-        It can be used for pre-processing the request.
-        """
-        pass
 
-    def after(self, req: Request, res: Response) -> t.Optional[Response]:
+        It can be used for pre-processing the request.
+
+        Returns:
+            `Response | None:` The response object or None if no response
+                is generated.
+        """
+        ...
+
+    def after_handler(
+        self, req: Request, res: Response
+    ) -> t.Optional[Response]:
         """
         Method called after the request handler is executed.
+
         It can be used for post-processing the response.
+
+        Returns:
+            `Response | None:` The response object or None if no response
+                is generated.
         """
-        pass
+        ...
 
     def handler(self, req: Request) -> Response:
         """
         Method that handles the incoming request.
+
         This method needs to be implemented by subclasses.
+
+        Returns:
+            `Response:` The response object.
         """
-        raise NotImplementedError
+        ...
 
     def on_exception(self, req: Request, exc: Exception) -> Response:
         """
@@ -42,23 +83,14 @@ class BaseView:
 
         It can be used to handle specific exceptions and return custom
         responses.
+
+        Returns:
+            `Response:` The response object.
         """
-        if isinstance(exc, HTTPException):
-            return Response(
-                exc.get_response(),
-                status_code=exc.status_code,
-                headers=exc.headers,
-            )
-        return Response(
-            {
-                'code': 'INTERNAL_SERVER_ERROR',
-                'error': 'Something went wrong, try again later.',
-            },
-            status_code=500,
-        )
+        raise exc
 
     def __repr__(self) -> str:
         """
         Returns a string representation of the BaseView instance.
         """
-        return f'<{self.__class__.__name__} {self.route} {self.methods}>'
+        return f'<{self.__class__.__name__} {self.methods} {self.route}>'

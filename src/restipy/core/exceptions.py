@@ -6,17 +6,17 @@ class RestiPyException(Exception):
 
 
 class HTTPException(RestiPyException):
-    """Base exception class for HTTP errors.
+    """
+    Represents an HTTP exception that can be raised by the application.
 
-    Attributes:
-        message (str): The error message.
-        status_code (int): The HTTP status code associated with the error.
-        headers (dict): The headers to be included in the error response.
-        code (Union[int, str]): The error code associated with the error.
-        error (Any): Additional error information.
+    The `HTTPException` class is a custom exception that can be raised when an
+    HTTP-related error occurs in the application. It provides a standardized
+    way to handle and report these errors, including the ability to specify the
+    HTTP status code, error message, headers, and an optional underlying error
+    object.
 
-    Methods:
-        get_response(): Returns the error response body.
+    The `get_response()` method returns a dictionary representation of the
+    error response that can be used to generate the appropriate HTTP response.
     """
 
     __slots__ = ('message', 'status_code', 'headers', 'code', 'error')
@@ -37,15 +37,15 @@ class HTTPException(RestiPyException):
         Initialize a new instance of the Exception class.
 
         Args:
-            message (str): The error message.
-            status_code (int, optional): The HTTP status code associated with
+            `message (str):` The error message.
+            `status_code (int, optional):` The HTTP status code associated with
                 the exception. Defaults to None.
-            headers (dict, optional): Additional headers to be included in the
-                response. Defaults to {}.
-            error (Any, optional): The underlying error object. Defaults to
+            `headers (dict, optional):` Additional headers to be included in
+                the response. Defaults to {}.
+            `error (Any, optional):` The underlying error object. Defaults to
                 None.
-            code (Union[int, str], optional): A custom error code. Defaults to
-                None.
+            `code (Union[int, str], optional):` A custom error code. Defaults
+                to None.
         """
         super().__init__(message)
         self.message = message
@@ -58,7 +58,7 @@ class HTTPException(RestiPyException):
         """Returns the error response body.
 
         Returns:
-            dict: The error response body.
+            `dict:` The error response body.
         """
         body = {'code': self.code, 'message': self.message}
 
@@ -75,6 +75,6 @@ class HTTPException(RestiPyException):
         error message.
 
         Returns:
-            str: A string representation of the HTTPException object.
+            `str:` A string representation of the HTTPException object.
         """
         return f'<HTTPException {self.code!r} {self.message!r}>'

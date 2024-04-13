@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from restipy.routing import HTTP_STATUS_LINES
+from restipy.core.response import _HTTP_STATUS_LINES
 from test_app.wsgi import application
 from webtest import TestApp
 
@@ -14,34 +14,34 @@ class TestWSGI(unittest.TestCase):
     def test_wsgi_method_get(self):
         resp = self.client.get('/')
         self.assertEqual(resp.status_int, 200)
-        self.assertEqual(resp.status, HTTP_STATUS_LINES[resp.status_int])
+        self.assertEqual(resp.status, _HTTP_STATUS_LINES[resp.status_int])
 
     def test_wsgi_method_post(self):
         resp = self.client.post('/')
         self.assertEqual(resp.status_int, 200)
-        self.assertEqual(resp.status, HTTP_STATUS_LINES[resp.status_int])
+        self.assertEqual(resp.status, _HTTP_STATUS_LINES[resp.status_int])
 
     def test_wsgi_method_patch(self):
         resp = self.client.patch('/')
         self.assertEqual(resp.status_int, 200)
-        self.assertEqual(resp.status, HTTP_STATUS_LINES[resp.status_int])
+        self.assertEqual(resp.status, _HTTP_STATUS_LINES[resp.status_int])
 
     def test_wsgi_method_put(self):
         resp = self.client.put('/')
         self.assertEqual(resp.status_int, 200)
-        self.assertEqual(resp.status, HTTP_STATUS_LINES[resp.status_int])
+        self.assertEqual(resp.status, _HTTP_STATUS_LINES[resp.status_int])
 
     def test_wsgi_method_delete(self):
         resp = self.client.delete('/')
         self.assertEqual(resp.status_int, 200)
-        self.assertEqual(resp.status, HTTP_STATUS_LINES[resp.status_int])
+        self.assertEqual(resp.status, _HTTP_STATUS_LINES[resp.status_int])
 
     def test_wsgi_method_head(self):
         resp_head = self.client.head('/')
         resp_get = self.client.get('/')
         self.assertEqual(resp_head.status_int, 200)
         self.assertEqual(
-            resp_head.status, HTTP_STATUS_LINES[resp_head.status_int]
+            resp_head.status, _HTTP_STATUS_LINES[resp_head.status_int]
         )
         self.assertEqual(resp_head.body, b'')
         self.assertNotEqual(resp_head.body, resp_get.body)

@@ -3,23 +3,24 @@ from restipy.core.response import Response
 
 
 class BaseMiddleware:
-    """Base middleware class for middlewares.
+    """
+    The `BaseMiddleware` class provides a base implementation for middleware
+    in the Restipy framework. Middleware is used to intercept and modify
+    requests and responses before and after they are handled by the
+    application.
 
-    This class serves as the base class for implementing middlewares in the
-    Restipy framework.
-    Middlewares are components that can intercept and modify requests and
-    responses before and after they are handled by theapplication.
+    The `before_route` method is called before the request is routed to the
+    appropriate handler. This method can return a `Response` object to
+    short-circuit the request processing, or `None` to allow the request to
+    continue.
 
-    Attributes:
-        None
+    The `before_handler` method is called before the request handler is
+    executed. This method can also return a `Response` object to short-circuit
+    the request processing, or `None` to allow the request to continue.
 
-    Methods:
-        before_route: Called before the request is routed to a handler.
-            It can modify the request or return a response.
-        before_handler: Called before the request is handled by a handler.
-            It can modify the request or return a response.
-        after_handler: Called after the request is handled by a handler.
-            It can modify the request or response.
+    The `after_handler` method is called after the request handler has been
+    executed. This method can be used to perform post-processing on the
+    response, such as adding headers or modifying the response body.
     """
 
     def before_route(self, req: Request) -> Response | None:
@@ -28,11 +29,11 @@ class BaseMiddleware:
         route handler.
 
         Args:
-            req (Request): The incoming request object.
+            `req (Request):` The incoming request object.
 
         Returns:
-            Response | None: The response object if the middleware handles the
-                request, None otherwise.
+            `Response | None:` The response object if the middleware handles
+                the request, None otherwise.
         """
         pass
 
@@ -41,10 +42,10 @@ class BaseMiddleware:
         This method is called before the request handler is executed.
 
         Args:
-            req (Request): The incoming request object.
+            `req (Request):` The incoming request object.
 
         Returns:
-            Response | None: The response object or None if no response
+            `Response | None:` The response object or None if no response
                 is generated.
         """
         pass
@@ -54,7 +55,7 @@ class BaseMiddleware:
         This method is called after the request handler has been executed.
 
         Args:
-            req (Request): The request object.
-            res (Response): The response object.
+            `req (Request):` The request object.
+            `res (Response):` The response object.
         """
         pass

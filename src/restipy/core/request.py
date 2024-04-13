@@ -13,38 +13,21 @@ if t.TYPE_CHECKING:
 
 class Request:
     """
-    Represents an HTTP request.
+    Represents a request to the RestiPy application.
 
-    Args:
-        environ (dict): The WSGI environment dictionary.
-        params (dict, optional): The request parameters. Defaults to an empty
-        dictionary.
+    The `Request` class encapsulates the details of an incoming HTTP request,
+    providing access to the request parameters, headers, body, and other
+    relevant information. It is used internally by the RestiPy application to
+    handle and process incoming requests.
 
-    Attributes:
-        env (dict): The WSGI environment dictionary.
-        ctx (dict): The request context dictionary.
+    The `Request` class provides properties and methods to access various
+    aspects of the request, such as the HTTP method, path, query parameters,
+    headers, and request body. It also handles parsing of the request body,
+    including JSON and form data.
 
-    Properties:
-        app (RestiPy): The RestiPy application instance.
-        params (dict): The request parameters.
-        json (dict or None): The JSON body of the request, if the content type
-            is 'application/json'.
-        form (dict or None): The form data of the request, if the content type
-            is not 'multipart/'.
-        header (dict): The request headers.
-        origin (str): The origin of the request.
-        url (str): The full URL of the request.
-        href (str): The href of the request.
-        method (str): The HTTP method of the request.
-        path (str): The path of the request.
-        query (dict or None): The query parameters of the request.
-        host (str or None): The host of the request.
-        charset (str or None): The charset of the request.
-        content_length (int): The content length of the request.
-        protocol (str): The protocol of the request.
-        secure (bool): Whether the request is secure (HTTPS).
-        accept (str or None): The accept header of the request.
-        content_type (str): The content type of the request.
+    This class is not intended to be used directly by application developers,
+    but rather is used internally by the RestiPy framework to handle incoming
+    requests.
     """
 
     __slots__ = ('_params', '_body', '_headers', 'env', 'ctx')
@@ -54,8 +37,8 @@ class Request:
         Initializes a new instance of the Request class.
 
         Args:
-            environ (dict): The WSGI environment dictionary.
-            params (dict, optional): The request parameters. Defaults to an
+            `environ (dict):` The WSGI environment dictionary.
+            `params (dict, optional):` The request parameters. Defaults to an
                 empty dictionary.
         """
         self.env = environ
@@ -69,7 +52,7 @@ class Request:
         Reads and returns the request body.
 
         Returns:
-            bytes or None: The request body, or None if the request method is
+            `bytes or None:` The request body, or None if the request method is
                 not 'POST', 'PUT', or 'PATCH'.
         """
         if self.method not in ('POST', 'PUT', 'PATCH'):
@@ -97,7 +80,7 @@ class Request:
         The RestiPy application instance.
 
         Returns:
-            RestiPy: The RestiPy application instance.
+            `RestiPy:` The RestiPy application instance.
         """
         return self.env['restipy.app']
 
@@ -107,7 +90,7 @@ class Request:
         The request parameters.
 
         Returns:
-            dict: The request parameters.
+            `dict:` The request parameters.
         """
         return self._params
 
@@ -117,10 +100,7 @@ class Request:
         Set the parameters for the request.
 
         Args:
-            params (dict): A dictionary containing the parameters to be set.
-
-        Returns:
-            None
+            `params (dict):` A dictionary containing the parameters to be set.
         """
         self._params = params
 
@@ -131,7 +111,7 @@ class Request:
         'application/json'.
 
         Returns:
-            dict or None: The JSON body of the request, or None if the content
+            `dict or None:` The JSON body of the request, or None if the content
                 type is not 'application/json'.
         """
         ctype = self.content_type.lower().split(';')[0]
@@ -154,7 +134,7 @@ class Request:
         The form data of the request, if the content type is not 'multipart/'.
 
         Returns:
-            dict or None: The form data of the request, or None if the content
+            `dict or None:` The form data of the request, or None if the content
                 type is 'multipart/'.
         """
         if self.content_type.startswith('multipart/'):
@@ -176,7 +156,7 @@ class Request:
         The request headers.
 
         Returns:
-            dict: The request headers.
+            `dict:` The request headers.
         """
         if self._headers is None:
             self._headers = {
@@ -192,7 +172,7 @@ class Request:
         The origin of the request.
 
         Returns:
-            str: The origin of the request.
+            `str:` The origin of the request.
         """
         return f'{self.protocol}://{self.host}'.lower()
 
@@ -202,7 +182,7 @@ class Request:
         The full URL of the request.
 
         Returns:
-            str: The full URL of the request.
+            `str:` The full URL of the request.
         """
         return urljoin(self.origin, self.path).rstrip('/')
 
@@ -212,7 +192,7 @@ class Request:
         The href of the request.
 
         Returns:
-            str: The href of the request.
+            `str:` The href of the request.
         """
         return f'{self.url}?{self.env.get("QUERY_STRING", "")}'
 
@@ -222,7 +202,7 @@ class Request:
         The HTTP method of the request.
 
         Returns:
-            str: The HTTP method of the request.
+            `str:` The HTTP method of the request.
         """
         return self.env.get('REQUEST_METHOD', 'GET').upper()
 
@@ -232,7 +212,7 @@ class Request:
         The path of the request.
 
         Returns:
-            str: The path of the request.
+            `str:` The path of the request.
         """
         return self.env.get('PATH_INFO', '/')
 
@@ -242,8 +222,8 @@ class Request:
         The query parameters of the request.
 
         Returns:
-            dict or None: The query parameters of the request, or None if there
-            are no query parameters.
+            `dict or None:` The query parameters of the request, or None if there
+                are no query parameters.
         """
         qs = self.env.get('QUERY_STRING')
         if qs is None:
@@ -256,7 +236,7 @@ class Request:
         The host of the request.
 
         Returns:
-            str or None: The host of the request.
+            `str or None:` The host of the request.
         """
         return self.env.get('HTTP_HOST')
 
@@ -266,7 +246,7 @@ class Request:
         The charset of the request.
 
         Returns:
-            str or None: The charset of the request.
+            `str or None:` The charset of the request.
         """
         if self.content_type is None:
             return None
@@ -281,7 +261,7 @@ class Request:
         The content length of the request.
 
         Returns:
-            int: The content length of the request.
+            `int:` The content length of the request.
         """
         return int(self.env.get('CONTENT_LENGTH', '0'))
 
@@ -291,7 +271,7 @@ class Request:
         The protocol of the request.
 
         Returns:
-            str: The protocol of the request.
+            `str:` The protocol of the request.
         """
         return self.env.get('wsgi.url_scheme', 'http').upper()
 
@@ -301,7 +281,7 @@ class Request:
         Whether the request is secure (HTTPS).
 
         Returns:
-            bool: True if the request is secure, False otherwise.
+            `bool:` True if the request is secure, False otherwise.
         """
         return self.protocol == 'HTTPS'
 
@@ -311,7 +291,7 @@ class Request:
         The accept header of the request.
 
         Returns:
-            str or None: The accept header of the request.
+            `str or None:` The accept header of the request.
         """
         accept = self.env.get('HTTP_ACCEPT')
         if accept:
@@ -324,7 +304,7 @@ class Request:
         The content type of the request.
 
         Returns:
-            str: The content type of the request.
+            `str:` The content type of the request.
         """
         return self.env.get('CONTENT_TYPE', '')
 
@@ -333,6 +313,6 @@ class Request:
         Returns a string representation of the Request object.
 
         Returns:
-            str: A string representation of the Request object.
+            `str:` A string representation of the Request object.
         """
         return f'<Request {self.method} {self.path}>'

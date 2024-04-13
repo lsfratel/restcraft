@@ -1,46 +1,51 @@
 import json
 import typing as t
+from http import client as httplib
 
 from restipy.core.exceptions import RestiPyException
-from restipy.routing import HTTP_CODES, HTTP_STATUS_LINES
 from restipy.utils.helpers import pep3333
+
+_HTTP_CODES = httplib.responses.copy()
+_HTTP_CODES[418] = "I'm a teapot"
+_HTTP_CODES[428] = 'Precondition Required'
+_HTTP_CODES[429] = 'Too Many Requests'
+_HTTP_CODES[431] = 'Request Header Fields Too Large'
+_HTTP_CODES[451] = 'Unavailable For Legal Reasons'
+_HTTP_CODES[511] = 'Network Authentication Required'
+_HTTP_STATUS_LINES = {k: '%d %s' % (k, v) for (k, v) in _HTTP_CODES.items()}
 
 
 class BaseResponse:
     """
-    Represents a base response object for HTTP responses.
+    Represents a base response object for a RESTful API.
 
-    Attributes:
-        _body (Any): The response body.
-        _status (int): The response status code.
-        _headers (dict[str, Any]): The response headers.
-        _encoded_data (bytes): The encoded response data.
-        json_dumps (Callable): The JSON serialization function.
-        json_loads (Callable): The JSON deserialization function.
+    The `BaseResponse` class provides a set of properties and methods to manage
+    the response data, status code, and headers for a RESTful API. It includes
+    functionality to handle common HTTP response headers and status codes, as
+    well as methods to get the encoded response data, status line, and headers.
 
-    Properties:
-        header_list (List[Tuple[str, str]]): The list of response headers.
-        header (dict[str, Any]): The response headers.
-        status (int): The response status code.
-        status_line (str): The response status line.
-        data (Any): The response body.
+    The class has the following attributes:
+    - `_body`: The response body data.
+    - `_status`: The HTTP status code for the response.
+    - `_headers`: The HTTP headers for the response.
+    - `_encoded_data`: The encoded version of the response body data.
 
-    Methods:
-        set_status(status: int): Sets the response status code.
-        set_data(data: Any): Sets the response body.
-        get_response() -> Tuple[bytes, str, List[Tuple[str, str]]]: Returns
-            the encoded response data, status line, and headers.
-
+    The class also has the following methods:
+    - `header_list`: Returns a list of headers in the response, with certain
+      headers removed based on the response status code.
+    - `header`: Returns the headers of the response.
+    - `status`: Returns the status of the response.
+    - `status_line`: Returns the status line corresponding to the current
+      status code.
+    - `set_status`: Sets the status code for the response.
+    - `data`: Returns the body of the response.
+    - `set_data`: Sets the data for the response body.
+    - `_get_encoded_data`: Returns the encoded version of the response body.
+    - `get_response`: Returns the response data, status line, and headers as a
+      tuple.
     """
 
-    __slots__ = (
-        '_body',
-        '_status',
-        '_headers',
-        '_encoded_data',
-        'json_dumps',
-        'json_loads',
-    )
+    __slots__ = ('_body', '_status', '_headers', '_encoded_data')
 
     default_headers = {'content-type': 'text/plain; charset=utf-8'}
     bad_headers = {
@@ -60,11 +65,28 @@ class BaseResponse:
     def __init__(
         self, body: t.Any, *, status_code=200, headers: dict[str, t.Any] = {}
     ) -> None:
+        """
+        Initializes a new instance of the `Response` class with the given body,
+        status code, and headers.
+
+        Args:
+            `body (Any):` The response body data.
+            `status_code (int, optional):` The HTTP status code for the
+                response. Defaults to 200.
+            `headers (dict[str, Any], optional):` The HTTP headers for the
+                response. Defaults to an empty dictionary.
+
+        Attributes:
+            `_body (Any):` The response body data.
+            `_status (int):` The HTTP status code for the response.
+            `_headers (dict[str, Any]):` The HTTP headers for the response.
+            `_encoded_data (bytes):` The encoded version of the response body
+                data.
+            `encode (callable):` A reference to the `json.dumps` function.
+        """
         self._body = body
         self._status = status_code
         self._headers = self.default_headers.copy()
-        self.json_dumps = json.dumps
-        self.json_loads = json.loads
         for k, v in headers.items():
             self._headers[k.lower()] = v
 
@@ -79,7 +101,8 @@ class BaseResponse:
         where each tuple contains the header name and its corresponding value.
 
         Returns:
-            list: A list of tuples representing the headers in the response.
+            `list[tuple[str, str]]:` A list of tuples representing the headers
+                in the response.
         """
         if self._status in self.bad_headers:
             bad_headers = self.bad_headers[self._status]
@@ -93,7 +116,8 @@ class BaseResponse:
         """
         Returns the headers of the response.
 
-        :return: The headers of the response.
+        Returns:
+            `dict[str, str]:` The headers of the response.
         """
         return self._headers
 
@@ -102,7 +126,8 @@ class BaseResponse:
         """
         Returns the status of the response.
 
-        :return: The status of the response.
+        Returns:
+            `int:` The status of the response.
         """
         return self._status
 
@@ -111,22 +136,24 @@ class BaseResponse:
         """
         Returns the status line corresponding to the current status code.
 
-        :return: The status line as a string.
+        Returns:
+            `str:` The status line corresponding to the current status code.
         """
-        return HTTP_STATUS_LINES[self._status]
+        return _HTTP_STATUS_LINES[self._status]
 
     @status.setter
     def set_status(self, status: int):
         """
-        Sets the status code for the response.
+        Sets the status of the response.
 
         Args:
-            status (int): The HTTP status code to set.
+            `status (int):` The status code to set for the response.
 
         Raises:
-            RestiPyException: If the provided status code is invalid.
+            `RestiPyException:` If the provided `status` is not a valid HTTP
+                status code.
         """
-        if status not in HTTP_CODES:
+        if status not in _HTTP_CODES:
             raise RestiPyException('Invalid status code.')
         self._status = status
 
@@ -136,7 +163,7 @@ class BaseResponse:
         Returns the body of the response.
 
         Returns:
-            The body of the response.
+            `Any:` The body of the response.
         """
         return self._body
 
@@ -146,30 +173,30 @@ class BaseResponse:
         Set the data for the response body.
 
         Args:
-            data (Any): The data to be set as the response body.
-
-        Returns:
-            None
+            `data (Any):` The data to be set as the response body.
         """
         self._body = data
         self._encoded_data = None
+
+    def _encode(self):
+        return str(self._body).encode()
 
     def _get_encoded_data(self):
         """
         Returns the encoded version of the response body.
 
         Returns:
-            bytes: The encoded version of the response body.
+            `bytes:` The encoded version of the response body.
         """
-        return str(self._body).encode()
+        return self._encode()
 
     def get_response(self):
         """
-        Returns the response data, status line, and headers as a tuple.
+        Returns the encoded response data, status line, and headers.
 
-        :return: A tuple containing the response data, status line, and
-        headers.
-        :rtype: tuple
+        Returns:
+            `tuple[bytes, str, list[str]]:` The encoded response data, status
+                line, and headers.
         """
         data = self._get_encoded_data()
         self.header['content-length'] = str(len(data))
@@ -184,7 +211,7 @@ class BaseResponse:
         The string representation includes the class name and the status line.
 
         Returns:
-            str: The string representation of the Response object.
+            `str:` The string representation of the Response object.
         """
         return f'<{self.__class__.__name__} {self.status_line}>'
 
@@ -192,5 +219,5 @@ class BaseResponse:
 class Response(BaseResponse):
     default_headers = {'content-type': 'application/json; charset=utf-8'}
 
-    def _get_encoded_data(self):
-        return self.json_dumps(self._body).encode()
+    def _encode(self):
+        return json.dumps(self._body).encode()

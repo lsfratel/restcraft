@@ -30,9 +30,9 @@ RestiPy is divided into two main parts:
 - **Classes:** Uses a class-based system to define views, providing an organized and reusable structure.
 - **Defines Routes:** Allows for the explicit definition of routes within view classes.
 - **Lifecycle Methods:**
-  - **before:** Executed before the handler.
+  - **before_handler:** Executed before the handler.
   - **handler:** Route handler where the main logic of the request is processed.
-  - **after:** Executed after the handler.
+  - **after_handler:** Executed after the handler.
   - **on_exception:** Executed if an exception occurs during the handling of a request.
 - **Route Attributes:**
   - **route:** Regex pattern for the route.

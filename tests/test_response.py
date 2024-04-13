@@ -1,7 +1,6 @@
 import unittest
 
-from restipy.core.response import Response
-from restipy.routing import HTTP_STATUS_LINES
+from restipy.core.response import _HTTP_STATUS_LINES, Response
 
 
 class TestResponse(unittest.TestCase):
@@ -33,14 +32,14 @@ class TestResponse(unittest.TestCase):
 
     def test_response_status_line(self):
         self.assertEqual(
-            self.resp.status_line, HTTP_STATUS_LINES[self.resp.status]
+            self.resp.status_line, _HTTP_STATUS_LINES[self.resp.status]
         )
 
     def test_response_set_status(self):
         self.resp.set_status = 200
         self.assertEqual(self.resp.status, 200)
         self.assertEqual(
-            self.resp.status_line, HTTP_STATUS_LINES[self.resp.status]
+            self.resp.status_line, _HTTP_STATUS_LINES[self.resp.status]
         )
 
     def test_response_set_status_error(self):
