@@ -12,7 +12,6 @@ def get_wsgi_application(settings: t.ModuleType):
 
     Returns:
         `RestiPy:` An instance of the RestiPy application.
-
     """
     app = RestiPy()
 

@@ -386,14 +386,14 @@ class RestiPy:
                 return Response(
                     {
                         'code': 'INTERNAL_SERVER_ERROR',
-                        'error': 'Something went wrong, try again later.',
+                        'message': 'Something went wrong, try again later.',
                     },
                     status_code=500,
                 )
             return Response(
                 {
                     'code': 'INTERNAL_SERVER_ERROR',
-                    'error': str(e),
+                    'message': str(e),
                     'stacktrace': stacktrace.splitlines(),
                 },
                 status_code=500,

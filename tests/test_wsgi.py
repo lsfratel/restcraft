@@ -69,7 +69,7 @@ class TestWSGI(unittest.TestCase):
         body = json.loads(resp.body)
         self.assertEqual(body['code'], 'INTERNAL_SERVER_ERROR')
         self.assertEqual(
-            body['error'], 'Route handler must return a Response object.'
+            body['message'], 'Route handler must return a Response object.'
         )
 
     def test_wsgi_handler_raise_http_error(self):
