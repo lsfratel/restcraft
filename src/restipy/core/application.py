@@ -9,7 +9,7 @@ from types import ModuleType
 from restipy.core.exceptions import HTTPException, RestiPyException
 from restipy.core.middleware import Middleware
 from restipy.core.request import Request
-from restipy.core.response import Response
+from restipy.core.response import JSONResponse, Response
 from restipy.core.view import View
 from restipy.utils.helpers import ThreadSafeContext
 
@@ -359,7 +359,7 @@ class RestiPy:
 
             return out
         except HTTPException as e:
-            return Response(
+            return JSONResponse(
                 e.get_response(), status_code=e.status_code, headers=e.headers
             )
         except Exception as e:
@@ -389,14 +389,14 @@ class RestiPy:
             env['wsgi.errors'].write(stacktrace)
             env['wsgi.errors'].flush()
             if self.config.DEBUG is False:
-                return Response(
+                return JSONResponse(
                     {
                         'code': 'INTERNAL_SERVER_ERROR',
                         'message': 'Something went wrong, try again later.',
                     },
                     status_code=500,
                 )
-            return Response(
+            return JSONResponse(
                 {
                     'code': 'INTERNAL_SERVER_ERROR',
                     'message': str(e),

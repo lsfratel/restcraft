@@ -90,6 +90,5 @@ class TestWSGI(unittest.TestCase):
         self.assertEqual(resp.status_int, 413)
         self.assertEqual(
             resp.body,
-            b'{"code": "REQUEST_BODY_TOO_LARGE",'
-            b' "message": "Request body too large."}',
+            b'{"code": "REQUEST_BODY_TOO_LARGE", "message": "Request body too large."}',  # noqa: E501
         )

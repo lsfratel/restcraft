@@ -15,11 +15,11 @@ _HTTP_CODES[511] = 'Network Authentication Required'
 _HTTP_STATUS_LINES = {k: '%d %s' % (k, v) for (k, v) in _HTTP_CODES.items()}
 
 
-class BaseResponse:
+class Response:
     """
     Represents a base response object for a RESTful API.
 
-    The `BaseResponse` class provides a set of properties and methods to manage
+    The `Response` class provides a set of properties and methods to manage
     the response data, status code, and headers for a RESTful API. It includes
     functionality to handle common HTTP response headers and status codes, as
     well as methods to get the encoded response data, status line, and headers.
@@ -44,8 +44,6 @@ class BaseResponse:
     - `get_response`: Returns the response data, status line, and headers as a
       tuple.
     """
-
-    __slots__ = ('_body', '_status', '_headers', '_encoded_data')
 
     default_headers = {'content-type': 'text/plain; charset=utf-8'}
     bad_headers = {
@@ -216,8 +214,82 @@ class BaseResponse:
         return f'<{self.__class__.__name__} {self.status_line}>'
 
 
-class Response(BaseResponse):
+class JSONResponse(Response):
     default_headers = {'content-type': 'application/json; charset=utf-8'}
+
+    __slots__ = ('_body', '_status', '_headers', '_encoded_data')
 
     def _encode(self):
         return json.dumps(self._body).encode()
+
+
+class RedirectResponse(Response):
+    """
+    Represents a redirect response, which is used to redirect the client to a
+    different URL.
+
+    The `RedirectResponse` class is a subclass of the `Response` class, and is
+    used to create a redirect response with a specified location and status
+    code.
+    The status code is either 301 (Moved Permanently) or 302 (Found), depending
+    on the `permanent` parameter.
+
+    The `_encode` method overrides the base class implementation to return an
+    empty byte string, since redirect responses typically do not have a
+    response body.
+
+    The `__repr__` method returns a string representation of the
+    `RedirectResponse` object, including the class name, status line, and
+    redirection location.
+    """
+
+    __slots__ = ('_body', '_status', '_headers', '_encoded_data')
+
+    def __init__(
+        self,
+        location: str,
+        *,
+        body: t.Any = None,
+        permanent: bool = False,
+        headers: dict[str, t.Any] = {},
+    ):
+        """
+        Initializes a new instance of the `RedirectResponse` class with the
+        given location and status code.
+
+        Args:
+            `location (str):` The URL to redirect to.
+            `permanent (bool, optional):` If True, uses 301 Moved Permanently.
+                Otherwise, uses 302 Found.
+            `body (Any, optional):` The response body data, generally empty
+                for redirects.
+            `headers (dict[str, Any], optional):` Additional HTTP headers for
+                the response.
+        """
+        status_code = 301 if permanent else 302
+        headers = headers or {}
+        headers['location'] = location
+        super().__init__(body=body, status_code=status_code, headers=headers)
+
+    def _encode(self):
+        """
+        Redirection responses typically do not need to encode body data since
+        the body is often empty.
+
+        Returns:
+            `bytes:` The encoded version of the response body, typically empty
+                for redirects.
+        """
+        return b''
+
+    def __repr__(self) -> str:
+        """
+        Returns a string representation of the RedirectResponse object.
+
+        The string representation includes the class name, status line, and
+        redirection location.
+
+        Returns:
+            `str:` The string representation of the RedirectResponse object.
+        """
+        return f'<{self.__class__.__name__} {self.status_line} {self.header["location"]}>'  # noqa: E501

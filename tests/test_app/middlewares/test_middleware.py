@@ -1,6 +1,6 @@
 import re
 
-from restipy.core import Request, Response
+from restipy.core import JSONResponse, Request
 from restipy.core.middleware import Middleware
 
 
@@ -11,12 +11,12 @@ class TestMiddleware(Middleware):
 
     def before_route(self, req: Request):
         if self.rx_before_route.match(req.path):
-            return Response(body={'message': 'early return'})
+            return JSONResponse(body={'message': 'early return'})
 
-    def before_handler(self, req: Request) -> Response | None:
+    def before_handler(self, req: Request) -> JSONResponse | None:
         if self.rx_before_handler.match(req.path):
-            return Response(body={'message': 'early return'})
+            return JSONResponse(body={'message': 'early return'})
 
-    def after_handler(self, req: Request, res: Response):
+    def after_handler(self, req: Request, res: JSONResponse):
         if self.rx_after_handler.match(req.path):
             res.set_data = {'message': 'changed in middleware'}
