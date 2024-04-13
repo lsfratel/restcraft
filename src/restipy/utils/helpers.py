@@ -25,6 +25,13 @@ class ThreadSafeContext:
         """
         object.__setattr__(self, '_ctx', threading.local())
 
+    def clear(self) -> None:
+        """
+        Clears the thread-local context dictionary.
+        """
+        if hasattr(self._ctx, 'ctx'):
+            self._ctx.ctx.clear()
+
     def __getattr__(self, name: str) -> t.Any:
         """
         Retrieves a value from the thread-local context dictionary. If the

@@ -279,7 +279,6 @@ class RestiPy:
         """
         env['restipy.app'] = self
         self.ctx.request = req = Request(env)
-        out: t.Optional[Response] = None
 
         try:
             """
@@ -290,15 +289,17 @@ class RestiPy:
             immediately returned, short-circuiting the request processing.
             """
             for middleware in self._middlewares:
-                out = middleware.before_route(req)
-                if isinstance(out, Response):
-                    return out
+                early = middleware.before_route(req)
+                if isinstance(early, Response):
+                    return early
 
             """
             Match the incoming request path and HTTP method to a registered
             route.
             """
             view, params = self.match(req.path, req.method)
+
+            self.ctx.view = view
 
             req.set_params = params
 
@@ -310,9 +311,9 @@ class RestiPy:
             immediately returned, short-circuiting the request processing.
             """
             for middleware in self._middlewares:
-                out = middleware.before_handler(req)
-                if isinstance(out, Response):
-                    return out
+                early = middleware.before_handler(req)
+                if isinstance(early, Response):
+                    return early
 
             """
             Process the incoming request through the registered view.
@@ -328,9 +329,9 @@ class RestiPy:
             executed, and the returned response is returned.
             """
             try:
-                out = view.before_handler(req)
-                if isinstance(out, Response):
-                    return out
+                early = view.before_handler(req)
+                if isinstance(early, Response):
+                    return early
                 out = view.handler(req)
                 if not isinstance(out, Response):
                     raise RestiPyException(
@@ -357,6 +358,10 @@ class RestiPy:
             for middleware in self._middlewares:
                 middleware.after_handler(req, out)
 
+            """
+            Returns the final response object after all middleware components
+            have performed any necessary post-processing or cleanup tasks.
+            """
             return out
         except HTTPException as e:
             return JSONResponse(
@@ -388,19 +393,21 @@ class RestiPy:
             stacktrace = traceback.format_exc()
             env['wsgi.errors'].write(stacktrace)
             env['wsgi.errors'].flush()
-            if self.config.DEBUG is False:
-                return JSONResponse(
-                    {
-                        'code': 'INTERNAL_SERVER_ERROR',
-                        'message': 'Something went wrong, try again later.',
-                    },
-                    status_code=500,
-                )
-            return JSONResponse(
-                {
-                    'code': 'INTERNAL_SERVER_ERROR',
-                    'message': str(e),
+
+            exc_body: dict = {
+                'code': 'INTERNAL_SERVER_ERROR',
+                'message': 'Something went wrong, try again later.',
+            }
+
+            if self.config.DEBUG:
+                exc_body['error'] = {
+                    'exception': str(e),
                     'stacktrace': stacktrace.splitlines(),
-                },
-                status_code=500,
-            )
+                }
+
+            return JSONResponse(exc_body, status_code=500)
+        finally:
+            """
+            Clears the context associated with the current request.
+            """
+            self.ctx.clear()
