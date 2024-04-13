@@ -153,7 +153,7 @@ class RestiPy:
         for _, member in self._get_module_members(module):
             if not issubclass(member, Middleware):
                 continue
-            self.add_middleware(member())
+            self.add_middleware(member(self))
 
     def add_middleware(self, middleware: Middleware):
         """

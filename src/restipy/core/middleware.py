@@ -1,27 +1,49 @@
+from __future__ import annotations
+
+import typing as t
+
 from restipy.core.request import Request
 from restipy.core.response import Response
+
+if t.TYPE_CHECKING:
+    from restipy.core.application import RestiPy
 
 
 class Middleware:
     """
-    The `Middleware` class provides a base implementation for middleware
-    in the Restipy framework. Middleware is used to intercept and modify
-    requests and responses before and after they are handled by the
-    application.
+    Represents a middleware component that can be used to intercept and modify
+    requests and responses in a RestiPy application.
 
-    The `before_route` method is called before the request is routed to the
-    appropriate handler. This method can return a `Response` object to
-    short-circuit the request processing, or `None` to allow the request to
-    continue.
+    The `Middleware` class provides three main methods that can be overridden
+    to implement custom middleware functionality:
 
-    The `before_handler` method is called before the request handler is
-    executed. This method can also return a `Response` object to short-circuit
-    the request processing, or `None` to allow the request to continue.
+    - `before_route(self, req: Request) -> Response | None:` This method is
+      called before routing the request to the appropriate route handler. It
+      can be used to perform tasks such as authentication, authorization, or
+      request transformation.
 
-    The `after_handler` method is called after the request handler has been
-    executed. This method can be used to perform post-processing on the
-    response, such as adding headers or modifying the response body.
+    - `before_handler(self, req: Request) -> Response | None:` This method is
+      called before the request handler is executed. It can be used to perform
+      tasks such as logging, metrics collection, or request validation.
+
+    - `after_handler(self, req: Request, res: Response):` This method is called
+      after the request handler has been executed. It can be used to perform
+      tasks such as response transformation, caching, or error handling.
+
+    Middleware components can be registered with a `RestiPy` application
+    instance to customize the request/response processing pipeline.
     """
+
+    def __init__(self, app: RestiPy) -> None:
+        """
+        Initializes a new instance of the `Middleware` class with the provided
+        `RestiPy` application.
+
+        Args:
+            `app (RestiPy):` The `RestiPy` application instance that this
+                middleware will be associated with.
+        """
+        self.app = app
 
     def before_route(self, req: Request) -> Response | None:
         """
