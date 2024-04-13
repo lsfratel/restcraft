@@ -87,10 +87,7 @@ class RestiPy:
         for middleware in settings.MIDDLEWARES:
             self._import_middleware(middleware)
 
-    def _add_view(
-        self,
-        view: View,
-    ) -> None:
+    def _add_view(self, view: View) -> None:
         """
         Adds a view to the application's routing table.
 
@@ -159,7 +156,7 @@ class RestiPy:
                 continue
             self._add_view(mview(self))
 
-    def _import_middleware(self, middleware: str):
+    def _import_middleware(self, middleware_path: str):
         """
         Imports and adds a middleware to the application.
 
@@ -167,7 +164,7 @@ class RestiPy:
             `middleware (str):` The fully qualified name of the middleware
                 class.
         """
-        module = self._import_module(middleware)
+        module = self._import_module(middleware_path)
         for _, member in self._get_module_members(module):
             if not issubclass(member, Middleware):
                 continue
@@ -209,13 +206,19 @@ class RestiPy:
             `HTTPException:` If no matching route is found.
         """
         methods = [method]
+
         if method == 'HEAD':
             methods.append('GET')
+
         for method in methods:
             routes = self._routes.get(method) or []
             for view in routes:
-                if match := view.route.match(path):  # type: ignore
+                if isinstance(view.route, str):
+                    view.route = re.compile(view.route)
+
+                if match := view.route.match(path):
                     return view, match.groupdict()
+
         raise HTTPException(
             'Route not found.', status_code=404, code='ROUTE_NOT_FOUND'
         )
