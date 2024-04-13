@@ -1,6 +1,8 @@
 import json
+import os
 import typing as t
 from http import client as httplib
+from urllib.parse import quote
 
 from restipy.core.exceptions import RestiPyException
 from restipy.utils.helpers import pep3333
@@ -177,6 +179,12 @@ class Response:
         self._encoded_data = None
 
     def _encode(self):
+        """
+        Encodes the response body as a byte string.
+
+        Returns:
+            bytes: The encoded response body.
+        """
         return str(self._body).encode()
 
     def _get_encoded_data(self):
@@ -293,3 +301,136 @@ class RedirectResponse(Response):
             `str:` The string representation of the RedirectResponse object.
         """
         return f'<{self.__class__.__name__} {self.status_line} {self.header["location"]}>'  # noqa: E501
+
+
+class FileResponse(Response):
+    """
+    Represents a file response that can be sent to the client.
+
+    The `FileResponse` class is used to send a file as the response to a
+    client request. It handles different types of file input, such as file
+    paths, byte strings, and generators, and sets the appropriate headers for
+    the file response.
+
+    The class inherits from the `Response` class and adds additional
+    attributes and methods specific to file responses, such as the file name,
+    attachment status, and encoding of the file data.
+
+    The `_set_headers()` method sets the `content-disposition` header based on
+    whether the file should be displayed inline or as an attachment. The
+    `_encode()` method handles the encoding of the file data, supporting
+    different types of file input.
+
+    The `get_response()` method prepares the complete response data, including
+    the encoded file data, status line, and headers.
+    """
+
+    default_headers = {'content-type': 'application/octet-stream'}
+
+    __slots__ = (
+        '_body',
+        '_status',
+        '_headers',
+        '_encoded_data',
+        '_filename',
+        '_attachment',
+    )
+
+    def __init__(
+        self,
+        file: t.Union[str, bytes, t.Generator],
+        *,
+        filename: str,
+        attachment: bool = False,
+        headers: dict[str, t.Any] = {},
+    ):
+        """
+        Initializes a new instance of the `FileResponse` class.
+
+        Args:
+            `file (Union[str, bytes, Generator]):` The file to be included in
+                the response. Can be a file path, byte string, or generator.
+            `filename (str):` The name of the file to be included in the
+                response.
+            `attachment (bool, optional):` If True, the file will be sent as an
+                attachment. Defaults to False.
+            `headers (dict[str, Any], optional):` Additional headers to be
+                included in the response. Defaults to an empty dictionary.
+
+        Raises:
+            `ValueError:` If the provided file path does not exist.
+        """
+        super().__init__(body=None, headers=headers)
+        self._filename = filename
+        self._attachment = attachment
+
+        if isinstance(file, str):
+            if not os.path.isabs(file):
+                file = os.path.join(os.getcwd(), file)
+
+            if not os.path.isfile(file):
+                raise ValueError(f'File path {file} does not exist.')
+
+        self._body = file
+
+        self._set_headers()
+
+    def _set_headers(self):
+        """
+        Sets the appropriate headers for the file response, including the
+        content disposition type (attachment or inline) and the quoted
+        filename.
+        """
+        disposition_type = 'attachment' if self._attachment else 'inline'
+        filename_quoted = quote(self._filename)
+        self.header['content-disposition'] = (
+            f"{disposition_type}; filename*=UTF-8''{filename_quoted}"
+        )
+
+    def _encode(self):
+        """
+        Encodes the file response body based on its type.
+
+        If the body is a string, it is encoded from a file path.
+        If the body is bytes, it is returned as-is. If the body is a callable,
+        it is called and the result is returned.
+
+        Raises:
+            `TypeError:` If the file type is not supported.
+        """
+        if isinstance(self._body, str):
+            return self._encode_from_path(self._body)
+        elif isinstance(self._body, bytes):
+            return self._body
+        elif callable(self._body):
+            return self._body()
+        else:
+            raise TypeError('Unsupported file type.')
+
+    def _encode_from_path(self, path):
+        """
+        Reads the file at the given path in chunks and yields each chunk.
+
+        Args:
+            `path (str):` The path to the file to be read.
+
+        Yields:
+            `bytes:` The next chunk of the file.
+
+        Raises:
+            `TypeError:` If the file type is not supported.
+        """
+        with open(path, 'rb') as f:
+            while chunk := f.read(256 * 1024):
+                yield chunk
+
+    def get_response(self):
+        """
+        Returns the encoded file response data, status line, and header list.
+
+        Returns:
+            `Tuple[bytes, str, List[Tuple[str, str]]]:` The encoded file
+                response data, status line, and header list.
+        """
+        data = self._encode()
+        return (data, self.status_line, self.header_list)

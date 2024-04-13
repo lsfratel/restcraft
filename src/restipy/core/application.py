@@ -252,18 +252,20 @@ class RestiPy:
             `Iterable[bytes]:` An iterable of response bytes.
         """
         method = env.get('REQUEST_METHOD', 'GET').upper()
-        out = self.process_request(env)
 
-        data, status, headers = out.get_response()
+        data, status, headers = self.process_request(env)
 
         start_response(status, headers)
 
         if method == 'HEAD':
-            return []
+            data = bytes()
 
-        yield data
+        if inspect.isgenerator(data):
+            yield from data
+        else:
+            yield data
 
-    def process_request(self, env: dict) -> Response:
+    def process_request(self, env: dict):
         """
         Process the incoming request and return a response.
 
@@ -291,7 +293,7 @@ class RestiPy:
             for middleware in self._middlewares:
                 early = middleware.before_route(req)
                 if isinstance(early, Response):
-                    return early
+                    return early.get_response()
 
             """
             Match the incoming request path and HTTP method to a registered
@@ -313,7 +315,7 @@ class RestiPy:
             for middleware in self._middlewares:
                 early = middleware.before_handler(req)
                 if isinstance(early, Response):
-                    return early
+                    return early.get_response()
 
             """
             Process the incoming request through the registered view.
@@ -331,7 +333,7 @@ class RestiPy:
             try:
                 early = view.before_handler(req)
                 if isinstance(early, Response):
-                    return early
+                    return early.get_response()
                 out = view.handler(req)
                 if not isinstance(out, Response):
                     raise RestiPyException(
@@ -344,7 +346,7 @@ class RestiPy:
                     raise RestiPyException(
                         'Route exception must return Response object.'
                     ) from e
-                return out
+                return out.get_response()
 
             """
             Iterates through the registered middleware components and calls
@@ -362,11 +364,12 @@ class RestiPy:
             Returns the final response object after all middleware components
             have performed any necessary post-processing or cleanup tasks.
             """
-            return out
+            return out.get_response()
         except HTTPException as e:
-            return JSONResponse(
+            out = JSONResponse(
                 e.get_response(), status_code=e.status_code, headers=e.headers
             )
+            return out.get_response()
         except Exception as e:
             """
             Handles an unhandled exception that occurred during the request
@@ -405,7 +408,9 @@ class RestiPy:
                     'stacktrace': stacktrace.splitlines(),
                 }
 
-            return JSONResponse(exc_body, status_code=500)
+            out = JSONResponse(exc_body, status_code=500)
+
+            return out.get_response()
         finally:
             """
             Clears the context associated with the current request.

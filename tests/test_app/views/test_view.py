@@ -5,6 +5,7 @@ from restipy.core import (
     Request,
     View,
 )
+from restipy.core.response import FileResponse
 
 
 class TestHandlerReturnView(View):
@@ -45,3 +46,11 @@ class TestRedirectResponseTargetView(View):
 
     def handler(self, req: Request) -> JSONResponse:
         return JSONResponse(body={'message': 'hello from redirect'})
+
+
+class TestFileDownloadView(View):
+    route = r'^/test-file-download$'
+    methods = ['GET']
+
+    def handler(self, req: Request) -> FileResponse:
+        return FileResponse('src/restipy/wsgi.py', filename='wsgi.py')
