@@ -60,12 +60,15 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertDictEqual(
             resp.get_response(),
-            {'code': 'MALFORMED_JSON', 'message': 'Malformed JSON body.'},
+            {
+                'code': 'INVALID_REQUEST_BODY',
+                'message': 'Malformed JSON body.',
+            },
         )
 
     def test_request_form_body(self):
         self.req.env['wsgi.input'] = BytesIO(b'firstname=john&lastname=doe')
-        body = {'firstname': ['john'], 'lastname': ['doe']}
+        body = {'firstname': 'john', 'lastname': 'doe'}
         self.assertDictEqual(self.req.form, body)  # type: ignore
 
     def test_request_header(self):

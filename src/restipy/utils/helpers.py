@@ -134,6 +134,33 @@ class ThreadSafeContext:
         self._ctx.ctx[name] = value
 
 
+class UploadedFile:
+    """
+    Represents an uploaded file, containing the filename, content type,
+    and file path.
+
+    Args:
+        `filename (str):` The name of the uploaded file.
+        `content_type (str):` The MIME type of the uploaded file.
+        `filepath (str):` The file path of the uploaded file.
+
+    Attributes:
+        `filename (str):` The name of the uploaded file.
+        `content_type (str):` The MIME type of the uploaded file.
+        `filepath (str):` The file path of the uploaded file.
+    """
+
+    __slots__ = ('filename', 'content_type', 'filepath')
+
+    def __init__(self, filename: str, content_type: str, filepath: str):
+        self.filename = filename
+        self.content_type = content_type
+        self.filepath = filepath
+
+    def __repr__(self) -> str:
+        return f'<UploadedFile {self.filename} {self.filepath}>'
+
+
 def pep3333(value: str, errors='strict'):
     """
     Converts a string value to a UTF-8 encoded byte string, handling encoding

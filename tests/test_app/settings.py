@@ -6,6 +6,7 @@ VIEWS = {
     'test_app.views.methods_view',
     'test_app.views.test_middlewares_view',
     'test_app.views.test_view',
+    'test_app.views.test_multipart_view',
 }
 
 MIDDLEWARES = {
