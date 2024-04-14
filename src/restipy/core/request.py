@@ -38,7 +38,6 @@ class Request:
 
     __slots__ = (
         '_params',
-        '_body',
         '_headers',
         '_files',
         '_form',
@@ -59,17 +58,16 @@ class Request:
         self.ctx: dict[str, t.Any] = {}
 
         self._params = params
-        self._body: t.Any = None
         self._headers: t.Any = None
         self._files: dict[str, UploadedFile] = {}
         self._form: dict[str, t.Any] = {}
 
-    def _read_body(self) -> None | bytes:
+    def _read_body(self):
         """
         Reads and returns the request body.
 
         Returns:
-            bytes or None: The request body, or None if the request method is
+            `bytes or None:` The request body, or None if the request method is
                 not 'POST', 'PUT', or 'PATCH'.
         """
         if self.method not in ('POST', 'PUT', 'PATCH'):
@@ -79,7 +77,7 @@ class Request:
 
         try:
             max_body_size = self.app.config.MAX_BODY_SIZE
-        except AttributeError as e:
+        except Exception as e:
             raise HTTPException(
                 'Missing MAX_BODY_SIZE in settings.',
                 status_code=500,
@@ -93,16 +91,16 @@ class Request:
                 code='REQUEST_BODY_TOO_LARGE',
             )
 
-        body = self.env['wsgi.input'].read(max_body_size + 1)
+        input = self.env['wsgi.input']
+        toread = max(content_length, max_body_size)
+        readbytes = 0
 
-        if len(body) > max_body_size:
-            raise HTTPException(
-                'Request body too large.',
-                status_code=413,
-                code='REQUEST_BODY_TOO_LARGE',
-            )
-
-        return body
+        while readbytes < toread:
+            chunk = input.read(64 * 1024)
+            if not chunk:
+                break
+            readbytes += len(chunk)
+            yield chunk
 
     def _parse_url_encoded_form(self):
         """
@@ -119,14 +117,13 @@ class Request:
         if self._form:
             return self._form
 
-        if not self._body:
-            self._body = self._read_body()
+        body = b''
 
-        if not self._body:
-            return
+        for chunk in self._read_body():
+            body += chunk
 
         try:
-            self._form = dict(parse_qsl(self._body.decode()))
+            self._form = dict(parse_qsl(body.decode()))
         except Exception as e:
             raise HTTPException(
                 'Invalid request body.',
@@ -134,7 +131,8 @@ class Request:
                 code='INVALID_REQUEST_BODY',
             ) from e
 
-        return self._form
+        if self._form:
+            return self._form
 
     def _get_multipart_message(self):
         """
@@ -151,7 +149,9 @@ class Request:
         parser = email.parser.BytesFeedParser(policy=email.policy.HTTP)
         parser.feed(('content-type: %s\r\n' % self.content_type).encode())
         parser.feed('\r\n'.encode())
-        parser.feed(self._body)
+
+        for chunk in self._read_body():
+            parser.feed(chunk)
 
         return parser.close()
 
@@ -171,12 +171,6 @@ class Request:
         """
         if self._files:
             return self._files
-
-        if not self._body:
-            self._body = self._read_body()
-
-        if not self._body:
-            return
 
         message = self._get_multipart_message()
 
@@ -220,16 +214,10 @@ class Request:
         if self._form:
             return self._form
 
-        if not self._body:
-            self._body = self._read_body()
-
-        if not self._body:
-            return
-
         message = self._get_multipart_message()
 
         if not message.is_multipart():
-            return None
+            return
 
         for part in message.iter_parts():  # type: ignore
             if part.get_filename():
@@ -241,7 +229,8 @@ class Request:
                 payload = payload.decode()
             self._form[name] = payload
 
-        return self._form
+        if self._form:
+            return self._form
 
     def _parse_json_data(self):
         """
@@ -263,14 +252,16 @@ class Request:
         if ctype not in ('application/json', 'application/json-rpc'):
             return
 
-        if not self._body:
-            self._body = self._read_body()
+        body = b''
 
-        if not self._body:
+        for chunk in self._read_body():
+            body += chunk
+
+        if not body:
             return
 
         try:
-            self._form = json.loads(self._body)
+            self._form = json.loads(body.decode())
         except Exception as e:
             raise HTTPException(
                 'Malformed JSON body.',
