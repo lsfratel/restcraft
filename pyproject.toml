@@ -1,6 +1,6 @@
 [project]
 name = "restipy"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A minimalist Python WSGI framework for quick development of RESTful APIs."
 authors = [
   {name = "Lucas Santana", email = "lsfratel@gmail.com"},
@@ -16,6 +16,10 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.version]
+source = "file"
+path = "src/restipy/__init__.py"
 
 [tool.pdm.scripts]
 dev = "gunicorn --reload --threads 2 tests.test_app.wsgi"
