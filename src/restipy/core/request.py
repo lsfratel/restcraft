@@ -8,6 +8,7 @@ import json
 import shutil
 import tempfile
 import typing as t
+from email.message import Message
 from urllib.parse import parse_qsl, urljoin
 
 from restipy.conf import settings
@@ -49,7 +50,7 @@ class Request:
         'ctx',
     )
 
-    def __init__(self, environ: dict, params: dict = {}) -> None:
+    def __init__(self, environ: t.Dict, params: t.Dict = {}) -> None:
         """
         Initializes a new instance of the Request class.
 
@@ -59,14 +60,14 @@ class Request:
                 empty dictionary.
         """
         self.env = environ
-        self.ctx: dict[str, t.Any] = {}
+        self.ctx: t.Dict[str, t.Any] = {}
 
         self._params = params
         self._headers: t.Any = None
-        self._files: dict[str, UploadedFile] = {}
-        self._form: dict[str, t.Any] = {}
+        self._files: t.Dict[str, UploadedFile] = {}
+        self._form: t.Dict[str, t.Any] = {}
 
-    def _read_body(self):
+    def _read_body(self) -> t.Generator[bytes, None, None]:
         """
         Streams the request body in chunks, yielding each chunk as it is read.
         Stops reading if the body exceeds the configured maximum size.
@@ -116,7 +117,7 @@ class Request:
                     code='REQUEST_BODY_TOO_LARGE',
                 )
 
-    def _parse_url_encoded_form(self):
+    def _parse_url_encoded_form(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
         Parses the URL-encoded form data from the request body.
 
@@ -148,7 +149,7 @@ class Request:
         if self._form:
             return self._form
 
-    def _get_multipart_message(self):
+    def _get_multipart_message(self) -> Message:
         """
         Parses the request body as a multipart message using the
         email.parser.BytesFeedParser.
@@ -169,7 +170,7 @@ class Request:
 
         return parser.close()
 
-    def _parse_multipart_files(self):
+    def _parse_multipart_files(self) -> t.Optional[t.Dict[str, UploadedFile]]:
         """
         Parses multipart form data from the request body and returns a
         dictionary of uploaded files.
@@ -212,7 +213,7 @@ class Request:
 
         return self._files
 
-    def _parse_multipart_form(self):
+    def _parse_multipart_form(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
         Parses the multipart form data from the request body.
 
@@ -246,7 +247,7 @@ class Request:
         if self._form:
             return self._form
 
-    def _parse_json_data(self):
+    def _parse_json_data(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
         Parses the request body as JSON data and stores it in the `_form`
         attribute.
@@ -283,7 +284,8 @@ class Request:
                 code='INVALID_REQUEST_BODY',
             ) from e
 
-        return self._form
+        if self._form:
+            return self._form
 
     @property
     def app(self) -> RestiPy:
@@ -296,7 +298,7 @@ class Request:
         return self.env['restipy.app']
 
     @property
-    def params(self) -> dict[str, t.Any]:
+    def params(self) -> t.Dict[str, t.Any]:
         """
         The request parameters.
 
@@ -306,7 +308,7 @@ class Request:
         return self._params
 
     @params.setter
-    def set_params(self, params: dict):
+    def set_params(self, params: t.Dict):
         """
         Set the parameters for the request.
 
@@ -316,7 +318,7 @@ class Request:
         self._params = params
 
     @property
-    def json(self) -> dict[str, t.Any] | None:
+    def json(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
         Returns the request body parsed as JSON, or `None` if the body is
         empty or not valid JSON.
@@ -328,7 +330,7 @@ class Request:
         return self._parse_json_data()
 
     @property
-    def form(self) -> dict[str, str] | None:
+    def form(self) -> t.Optional[t.Dict[str, str]]:
         """
         Returns the form data from the request, parsed from the request body.
 
@@ -345,7 +347,7 @@ class Request:
         return self._parse_url_encoded_form()
 
     @property
-    def files(self):
+    def files(self) -> t.Optional[t.Dict[str, UploadedFile]]:
         """
         Returns the files from the multipart form data in the request.
 
@@ -356,7 +358,7 @@ class Request:
         return self._parse_multipart_files()
 
     @property
-    def header(self) -> dict[str, str]:
+    def header(self) -> t.Dict[str, str]:
         """
         The request headers.
 
@@ -425,7 +427,7 @@ class Request:
         return self.env.get('PATH_INFO', '/')
 
     @property
-    def query(self) -> dict[str, list[t.Any]] | None:
+    def query(self) -> t.Optional[t.Dict[str, t.List[t.Any]]]:
         """
         The query parameters of the request.
 
@@ -449,7 +451,7 @@ class Request:
         return self.env.get('HTTP_HOST', '')
 
     @property
-    def charset(self, default='utf-8') -> str | None:
+    def charset(self, default='utf-8') -> t.Optional[str]:
         """
         The charset of the request.
 
@@ -496,7 +498,7 @@ class Request:
         return self.protocol == 'HTTPS'
 
     @property
-    def accept(self) -> str | None:
+    def accept(self) -> t.Optional[str]:
         """
         The accept header of the request.
 

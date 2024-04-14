@@ -1,7 +1,7 @@
 from restipy.core.application import RestiPy
 
 
-def get_wsgi_application():
+def get_wsgi_application() -> RestiPy:
     """
     Returns a WSGI application instance.
 

@@ -18,7 +18,7 @@ class LazySettings:
         self._module: ModuleType
         self._setup()
 
-    def _setup(self):
+    def _setup(self) -> None:
         try:
             self._module = importlib.import_module(self.settings_module)
         except ImportError as e:

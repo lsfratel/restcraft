@@ -35,7 +35,7 @@ class View:
     __slots__ = ('route', 'methods', 'app')
 
     route: t.Union[str, t.Pattern[str]]
-    methods: list[str]
+    methods: t.List[str]
 
     def __init__(self, app: RestiPy) -> None:
         """

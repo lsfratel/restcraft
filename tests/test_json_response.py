@@ -49,4 +49,4 @@ class TestResponse(unittest.TestCase):
         self.assertEqual(str(ex), 'Invalid status code.')
 
     def test_json_response_data(self):
-        self.assertDictEqual(self.resp.data, self.data)
+        self.assertDictEqual(self.resp.body, self.data)

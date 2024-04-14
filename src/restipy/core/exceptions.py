@@ -31,7 +31,7 @@ class HTTPException(RestiPyException):
         message: str,
         *,
         status_code: t.Optional[int] = None,
-        headers: dict = {},
+        headers: t.Dict = {},
         error: t.Optional[t.Any] = None,
         code: t.Optional[t.Union[int, str]] = None,
     ) -> None:
@@ -56,7 +56,7 @@ class HTTPException(RestiPyException):
         self.code = code or self.default_code
         self.error = error
 
-    def get_response(self):
+    def get_response(self) -> t.Dict[str, t.Any]:
         """Returns the error response body.
 
         Returns:

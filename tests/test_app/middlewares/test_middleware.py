@@ -19,4 +19,4 @@ class TestMiddleware(Middleware):
 
     def after_handler(self, req: Request, res: JSONResponse):
         if self.rx_after_handler.match(req.path):
-            res.set_data = {'message': 'changed in middleware'}
+            res.set_body = {'message': 'changed in middleware'}

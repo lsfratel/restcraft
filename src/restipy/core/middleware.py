@@ -45,7 +45,7 @@ class Middleware:
         """
         self.app = app
 
-    def before_route(self, req: Request) -> Response | None:
+    def before_route(self, req: Request) -> t.Optional[Response]:
         """
         This method is called before routing the request to the appropriate
         route handler.
@@ -59,7 +59,7 @@ class Middleware:
         """
         pass
 
-    def before_handler(self, req: Request) -> Response | None:
+    def before_handler(self, req: Request) -> t.Optional[Response]:
         """
         This method is called before the request handler is executed.
 
@@ -72,7 +72,7 @@ class Middleware:
         """
         pass
 
-    def after_handler(self, req: Request, res: Response):
+    def after_handler(self, req: Request, res: Response) -> None:
         """
         This method is called after the request handler has been executed.
 
@@ -81,3 +81,6 @@ class Middleware:
             `res (Response):` The response object.
         """
         pass
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}>'

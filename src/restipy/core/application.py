@@ -66,11 +66,11 @@ class RestiPy:
         """
         self.ctx = ThreadSafeContext()
 
-        self._routes: dict[str, list[View]] = {}
+        self._routes: t.Dict[str, t.List[View]] = {}
 
-        self._middlewares: list[Middleware] = []
+        self._middlewares: t.List[Middleware] = []
 
-    def bootstrap(self):
+    def bootstrap(self) -> None:
         """
         Bootstraps the application by importing views, and middleware.
         """
@@ -119,7 +119,9 @@ class RestiPy:
         except ModuleNotFoundError as e:
             raise ImportError(f'Could not import module {module_path}.') from e
 
-    def _get_module_members(self, module: ModuleType, mt=inspect.isclass):
+    def _get_module_members(
+        self, module: ModuleType, mt=inspect.isclass
+    ) -> t.Generator[t.Tuple[str, t.Any], None, None]:
         """
         Get the members of a module that satisfy a given condition.
 
@@ -136,7 +138,7 @@ class RestiPy:
             if member.__module__ == module.__name__:
                 yield (name, member)
 
-    def _import_view(self, view: str):
+    def _import_view(self, view: str) -> None:
         """
         Import a view module and add its routes to the application.
 
@@ -149,7 +151,7 @@ class RestiPy:
                 continue
             self._add_view(mview(self))
 
-    def _import_middleware(self, middleware_path: str):
+    def _import_middleware(self, middleware_path: str) -> None:
         """
         Imports and adds a middleware to the application.
 
@@ -163,7 +165,7 @@ class RestiPy:
                 continue
             self.add_middleware(member(self))
 
-    def add_middleware(self, middleware: Middleware):
+    def add_middleware(self, middleware: Middleware) -> None:
         """
         Adds a middleware to the application.
 
@@ -180,7 +182,7 @@ class RestiPy:
 
     def match(
         self, path: str, method: str
-    ) -> tuple[View, dict[str, str | t.Any]]:
+    ) -> t.Tuple[View, t.Dict[str, str | t.Any]]:
         """
         Matches the given path and method to a route in the application.
 
@@ -215,7 +217,7 @@ class RestiPy:
         )
 
     def __call__(
-        self, env: dict, start_response: t.Callable
+        self, env: t.Dict, start_response: t.Callable
     ) -> t.Iterable[bytes]:
         """
         Handle the WSGI callable interface.
@@ -229,7 +231,9 @@ class RestiPy:
         """
         return self.wsgi(env, start_response)
 
-    def wsgi(self, env: dict, start_response: t.Callable) -> t.Iterable[bytes]:
+    def wsgi(
+        self, env: t.Dict, start_response: t.Callable
+    ) -> t.Iterable[bytes]:
         """
         Handle the WSGI request and response.
 
@@ -254,7 +258,9 @@ class RestiPy:
         else:
             yield data
 
-    def process_request(self, env: dict):
+    def process_request(
+        self, env: t.Dict
+    ) -> t.Tuple[bytes, str, t.List[t.Tuple[str, str]]]:
         """
         Process the incoming request and return a response.
 
@@ -386,7 +392,7 @@ class RestiPy:
             env['wsgi.errors'].write(stacktrace)
             env['wsgi.errors'].flush()
 
-            exc_body: dict = {
+            exc_body: t.Dict = {
                 'code': 'INTERNAL_SERVER_ERROR',
                 'message': 'Something went wrong, try again later.',
             }

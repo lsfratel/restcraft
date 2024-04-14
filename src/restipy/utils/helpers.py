@@ -43,11 +43,11 @@ class ThreadSafeContext:
                 dictionary.
 
         Returns:
-            Any: The value associated with the requested key in the
+            `Any:` The value associated with the requested key in the
             thread-local context.
 
         Raises:
-            AttributeError: If the requested key is not found in the
+            `AttributeError:` If the requested key is not found in the
             thread-local context.
         """
         try:
@@ -161,7 +161,7 @@ class UploadedFile:
         return f'<UploadedFile {self.filename} {self.filepath}>'
 
 
-def pep3333(value: str, errors='strict'):
+def pep3333(value: str, errors='strict') -> str:
     """
     Converts a string value to a UTF-8 encoded byte string, handling encoding
     errors according to the specified error handling mode.
