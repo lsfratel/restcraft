@@ -68,9 +68,11 @@ class Request:
         Stops reading if the body exceeds the configured maximum size.
 
         Yields:
-            bytes: Next chunk of the request body.
+            `bytes:` Next chunk of the request body.
+
         Raises:
-            HTTPException: If the body exceeds the maximum size or configuration issues.
+            `HTTPException:` If the body exceeds the maximum size or
+                configuration issues.
         """
         if self.method not in ('POST', 'PUT', 'PATCH'):
             return None
@@ -340,6 +342,13 @@ class Request:
 
     @property
     def files(self):
+        """
+        Returns the files from the multipart form data in the request.
+
+        Returns:
+            `dict[str, Any]:` A dictionary containing the files from the
+                multipart form data.
+        """
         return self._parse_multipart_files()
 
     @property
@@ -350,12 +359,15 @@ class Request:
         Returns:
             `dict:` The request headers.
         """
-        if self._headers is None:
-            self._headers = {
-                env_to_h(k)[5:]: v
-                for k, v in self.env.items()
-                if k.startswith('HTTP_')
-            }
+        if self._headers:
+            return self._headers
+
+        self._headers = {
+            env_to_h(k)[5:]: v
+            for k, v in self.env.items()
+            if k.startswith('HTTP_')
+        }
+
         return self._headers
 
     @property
@@ -423,29 +435,31 @@ class Request:
         return dict(parse_qsl(qs))
 
     @property
-    def host(self) -> None:
+    def host(self) -> str:
         """
         The host of the request.
 
         Returns:
-            `str or None:` The host of the request.
+            `str:` The host of the request.
         """
-        return self.env.get('HTTP_HOST')
+        return self.env.get('HTTP_HOST', '')
 
     @property
-    def charset(self) -> str | None:
+    def charset(self, default='utf-8') -> str | None:
         """
         The charset of the request.
 
         Returns:
             `str or None:` The charset of the request.
         """
-        if self.content_type is None:
-            return None
+        if not self.content_type:
+            return default
+
         for part in self.content_type.split(';'):
             if 'charset=' in part:
                 return part.split('=')[1].strip()
-        return None
+
+        return default
 
     @property
     def content_length(self) -> int:
