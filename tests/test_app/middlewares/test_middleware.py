@@ -1,7 +1,7 @@
 import re
 
-from restipy.core import JSONResponse, Request
-from restipy.core.middleware import Middleware
+from restcraft.core import JSONResponse, Request
+from restcraft.core.middleware import Middleware
 
 
 class TestMiddleware(Middleware):

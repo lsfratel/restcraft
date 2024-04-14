@@ -4,8 +4,8 @@ import typing as t
 from http import client as httplib
 from urllib.parse import quote
 
-from restipy.core.exceptions import RestiPyException
-from restipy.utils.helpers import pep3333
+from restcraft.core.exceptions import RestCraftException
+from restcraft.utils.helpers import pep3333
 
 _HTTP_CODES = httplib.responses.copy()
 _HTTP_CODES[418] = "I'm a teapot"
@@ -158,11 +158,11 @@ class Response:
             `status (int):` The status code to set for the response.
 
         Raises:
-            `RestiPyException:` If the provided `status` is not a valid HTTP
+            `RestCraftException:` If the provided `status` is not a valid HTTP
                 status code.
         """
         if status not in _HTTP_CODES:
-            raise RestiPyException('Invalid status code.')
+            raise RestCraftException('Invalid status code.')
         self._status = status
 
     @property

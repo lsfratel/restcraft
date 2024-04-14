@@ -1,7 +1,7 @@
-from restipy.core.application import RestiPy
+from restcraft.core.application import RestCraft
 
 
-def get_wsgi_application() -> RestiPy:
+def get_wsgi_application() -> RestCraft:
     """
     Returns a WSGI application instance.
 
@@ -9,9 +9,9 @@ def get_wsgi_application() -> RestiPy:
         `settings (ModuleType):` The settings module for the application.
 
     Returns:
-        `RestiPy:` An instance of the RestiPy application.
+        `RestCraft:` An instance of the RestCraft application.
     """
-    app = RestiPy()
+    app = RestCraft()
 
     app.bootstrap()
 

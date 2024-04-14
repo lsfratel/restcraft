@@ -3,16 +3,16 @@ import os
 import typing as t
 from types import ModuleType
 
-from restipy.core.exceptions import RestiPyException
+from restcraft.core.exceptions import RestCraftException
 
 
 class LazySettings:
     """
     Provides a lazy settings class that loads settings from a module specified
-    by the `RESTIPY_SETTINGS_MODULE` environment variable.
+    by the `RESTCRAFT_SETTINGS_MODULE` environment variable.
     """
 
-    settings_module = os.environ.get('RESTIPY_SETTINGS_MODULE', '')
+    settings_module = os.environ.get('RESTCRAFT_SETTINGS_MODULE', '')
 
     def __init__(self) -> None:
         self._module: ModuleType
@@ -22,7 +22,7 @@ class LazySettings:
         try:
             self._module = importlib.import_module(self.settings_module)
         except ImportError as e:
-            raise RestiPyException(
+            raise RestCraftException(
                 f'Could not import settings module "{self.settings_module}".'
             ) from e
 

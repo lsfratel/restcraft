@@ -1,6 +1,6 @@
 import typing as t
 
-from restipy.core import HTTPException
+from restcraft.core import HTTPException
 
 
 class CustomException(HTTPException):

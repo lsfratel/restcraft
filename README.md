@@ -1,10 +1,10 @@
-# RestiPy WSGI Framework
+# RestCraft WSGI Framework
 
-RestiPy is a lightweight WSGI framework for Python, following the principles of minimalist design. It provides a solid foundation for developing web applications.
+RestCraft is a lightweight WSGI framework for Python, following the principles of minimalist design. It provides a solid foundation for developing web applications.
 
 ## Framework Structure
 
-RestiPy is divided into two main parts:
+RestCraft is divided into two main parts:
 
 - **Framework:** Provides the tools, libraries, and base structures needed for web application development. This includes mechanisms for routing requests, handling responses, and a robust middleware system.
 
@@ -48,9 +48,9 @@ RestiPy is divided into two main parts:
 
 ### Project Example
 
-Explore a sample project using RestiPy to see how everything comes together:
-[https://github.com/lsfratel/restipy/tree/main/tests/test_app](https://github.com/lsfratel/restipy/tree/main/tests/test_app)
+Explore a sample project using RestCraft to see how everything comes together:
+[https://github.com/lsfratel/restcraft/tree/main/tests/test_app](https://github.com/lsfratel/restcraft/tree/main/tests/test_app)
 
 ## In Development
 
-It's important to note that RestiPy is under development. Features and functionality may change as the framework evolves.
+It's important to note that RestCraft is under development. Features and functionality may change as the framework evolves.

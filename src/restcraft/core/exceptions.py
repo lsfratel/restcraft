@@ -1,13 +1,13 @@
 import typing as t
 
-__all__ = ('HTTPException', 'RestiPyException')
+__all__ = ('HTTPException', 'RestCraftException')
 
 
-class RestiPyException(Exception):
+class RestCraftException(Exception):
     """Base exception class for errors."""
 
 
-class HTTPException(RestiPyException):
+class HTTPException(RestCraftException):
     """
     Represents an HTTP exception that can be raised by the application.
 

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
-from restipy.core.request import Request
-from restipy.core.response import Response
+from restcraft.core.request import Request
+from restcraft.core.response import Response
 
 if t.TYPE_CHECKING:
-    from restipy.core.application import RestiPy
+    from restcraft.core.application import RestCraft
 
 
 __all__ = ('View',)
@@ -14,7 +14,7 @@ __all__ = ('View',)
 
 class View:
     """
-    The `View` class is the base class for all views in the Restipy
+    The `View` class is the base class for all views in the RestCraft
     framework. It provides a set of methods that can be overridden by
     subclasses to handle different aspects of the request/response lifecycle.
 
@@ -37,7 +37,7 @@ class View:
     route: t.Union[str, t.Pattern[str]]
     methods: t.List[str]
 
-    def __init__(self, app: RestiPy) -> None:
+    def __init__(self, app: RestCraft) -> None:
         """
         Initializes a new instance of the `View` class.
         """

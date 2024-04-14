@@ -1,9 +1,9 @@
 import unittest
 from io import BytesIO
 
-from restipy.conf import settings
-from restipy.core import Request
-from restipy.core.exceptions import HTTPException
+from restcraft.conf import settings
+from restcraft.core import Request
+from restcraft.core.exceptions import HTTPException
 
 
 class Settings:
@@ -26,7 +26,7 @@ class TestRequest(unittest.TestCase):
         'HTTP_HOST': 'localhost:8080',
         'HTTP_ACCEPT': '*/*',
         'QUERY_STRING': 'a=1&name=lucas',
-        'restipy.app': App(),
+        'restcraft.app': App(),
         'wsgi.input': BytesIO(b'{"firstname": "john", "lastname": "doe"}'),
         'wsgi.url_scheme': 'http',
     }

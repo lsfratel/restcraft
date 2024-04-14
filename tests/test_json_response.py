@@ -1,6 +1,6 @@
 import unittest
 
-from restipy.core.response import _HTTP_STATUS_LINES, JSONResponse
+from restcraft.core.response import _HTTP_STATUS_LINES, JSONResponse
 
 
 class TestResponse(unittest.TestCase):

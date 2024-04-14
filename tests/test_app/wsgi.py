@@ -1,3 +1,3 @@
-from restipy.wsgi import get_wsgi_application
+from restcraft.wsgi import get_wsgi_application
 
 application = get_wsgi_application()

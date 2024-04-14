@@ -1,11 +1,11 @@
-from restipy.core import (
+from restcraft.core import (
     HTTPException,
     JSONResponse,
     RedirectResponse,
     Request,
     View,
 )
-from restipy.core.response import FileResponse
+from restcraft.core.response import FileResponse
 
 
 class TestHandlerReturnView(View):
@@ -53,4 +53,4 @@ class TestFileDownloadView(View):
     methods = ['GET']
 
     def handler(self, req: Request) -> FileResponse:
-        return FileResponse('src/restipy/wsgi.py', filename='wsgi.py')
+        return FileResponse('src/restcraft/wsgi.py', filename='wsgi.py')

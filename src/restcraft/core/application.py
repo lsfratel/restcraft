@@ -6,18 +6,18 @@ import traceback
 import typing as t
 from types import ModuleType
 
-from restipy.conf import settings
-from restipy.core.exceptions import HTTPException, RestiPyException
-from restipy.core.middleware import Middleware
-from restipy.core.request import Request
-from restipy.core.response import JSONResponse, Response
-from restipy.core.view import View
-from restipy.utils.helpers import ThreadSafeContext
+from restcraft.conf import settings
+from restcraft.core.exceptions import HTTPException, RestCraftException
+from restcraft.core.middleware import Middleware
+from restcraft.core.request import Request
+from restcraft.core.response import JSONResponse, Response
+from restcraft.core.view import View
+from restcraft.utils.helpers import ThreadSafeContext
 
 
-class RestiPy:
+class RestCraft:
     """
-    The RestiPy class is the main entry point for the RestiPy web framework. It
+    The RestCraft class is the main entry point for the RestCraft web framework. It
     provides methods for bootstrapping the application, managing routes and
     middleware, and handling WSGI requests.
 
@@ -48,7 +48,7 @@ class RestiPy:
 
     def __init__(self) -> None:
         """
-        Initializes a new instance of the RestiPy class.
+        Initializes a new instance of the RestCraft class.
 
         This constructor sets up the internal data structures for managing
         routes and middleware.
@@ -274,7 +274,7 @@ class RestiPy:
             `HTTPException:` If an HTTP exception occurs.
             `Exception:` If any other exception occurs.
         """
-        env['restipy.app'] = self
+        env['restcraft.app'] = self
         self.ctx.request = req = Request(env)
 
         try:
@@ -321,7 +321,7 @@ class RestiPy:
             short-circuited and the response is returned immediately.
 
             If the view handler does not return a `Response` object, an
-            exception is raised. If a `RestiPyException` is raised during the
+            exception is raised. If a `RestCraftException` is raised during the
             request processing, the `on_exception` hook of the view is
             executed, and the returned response is returned.
             """
@@ -331,14 +331,14 @@ class RestiPy:
                     return early.get_response()
                 out = view.handler(req)
                 if not isinstance(out, Response):
-                    raise RestiPyException(
+                    raise RestCraftException(
                         'Route handler must return a Response object.'
                     )
                 view.after_handler(req, out)
-            except RestiPyException as e:
+            except RestCraftException as e:
                 out = view.on_exception(req, e)
                 if not isinstance(out, Response):
-                    raise RestiPyException(
+                    raise RestCraftException(
                         'Route exception must return Response object.'
                     ) from e
                 return out.get_response()

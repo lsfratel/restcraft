@@ -1,4 +1,4 @@
-from restipy.core import JSONResponse, Request, View
+from restcraft.core import JSONResponse, Request, View
 
 
 class TestHTTPMethodsView(View):

@@ -11,12 +11,12 @@ import typing as t
 from email.message import Message
 from urllib.parse import parse_qsl, urljoin
 
-from restipy.conf import settings
-from restipy.core.exceptions import HTTPException
-from restipy.utils.helpers import UploadedFile, env_to_h
+from restcraft.conf import settings
+from restcraft.core.exceptions import HTTPException
+from restcraft.utils.helpers import UploadedFile, env_to_h
 
 if t.TYPE_CHECKING:
-    from restipy.core.application import RestiPy
+    from restcraft.core.application import RestCraft
 
 
 __all__ = ('Request',)
@@ -24,11 +24,11 @@ __all__ = ('Request',)
 
 class Request:
     """
-    Represents a request to the RestiPy application.
+    Represents a request to the RestCraft application.
 
     The `Request` class encapsulates the details of an incoming HTTP request,
     providing access to the request parameters, headers, body, and other
-    relevant information. It is used internally by the RestiPy application to
+    relevant information. It is used internally by the RestCraft application to
     handle and process incoming requests.
 
     The `Request` class provides properties and methods to access various
@@ -37,7 +37,7 @@ class Request:
     including JSON and form data.
 
     This class is not intended to be used directly by application developers,
-    but rather is used internally by the RestiPy framework to handle incoming
+    but rather is used internally by the RestCraft framework to handle incoming
     requests.
     """
 
@@ -288,14 +288,14 @@ class Request:
             return self._form
 
     @property
-    def app(self) -> RestiPy:
+    def app(self) -> RestCraft:
         """
-        The RestiPy application instance.
+        The RestCraft application instance.
 
         Returns:
-            `RestiPy:` The RestiPy application instance.
+            `RestCraft:` The RestCraft application instance.
         """
-        return self.env['restipy.app']
+        return self.env['restcraft.app']
 
     @property
     def params(self) -> t.Dict[str, t.Any]:

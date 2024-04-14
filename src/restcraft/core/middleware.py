@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import typing as t
 
-from restipy.core.request import Request
-from restipy.core.response import Response
+from restcraft.core.request import Request
+from restcraft.core.response import Response
 
 if t.TYPE_CHECKING:
-    from restipy.core.application import RestiPy
+    from restcraft.core.application import RestCraft
 
 
 class Middleware:
     """
     Represents a middleware component that can be used to intercept and modify
-    requests and responses in a RestiPy application.
+    requests and responses in a RestCraft application.
 
     The `Middleware` class provides three main methods that can be overridden
     to implement custom middleware functionality:
@@ -30,17 +30,17 @@ class Middleware:
       after the request handler has been executed. It can be used to perform
       tasks such as response transformation, caching, or error handling.
 
-    Middleware components can be registered with a `RestiPy` application
+    Middleware components can be registered with a `RestCraft` application
     instance to customize the request/response processing pipeline.
     """
 
-    def __init__(self, app: RestiPy) -> None:
+    def __init__(self, app: RestCraft) -> None:
         """
         Initializes a new instance of the `Middleware` class with the provided
-        `RestiPy` application.
+        `RestCraft` application.
 
         Args:
-            `app (RestiPy):` The `RestiPy` application instance that this
+            `app (RestCraft):` The `RestCraft` application instance that this
                 middleware will be associated with.
         """
         self.app = app

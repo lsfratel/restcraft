@@ -1,4 +1,4 @@
-from restipy.core import (
+from restcraft.core import (
     JSONResponse,
     Request,
     View,
