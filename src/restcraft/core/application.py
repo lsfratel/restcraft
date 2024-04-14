@@ -17,9 +17,9 @@ from restcraft.utils.helpers import ThreadSafeContext
 
 class RestCraft:
     """
-    The RestCraft class is the main entry point for the RestCraft web framework. It
-    provides methods for bootstrapping the application, managing routes and
-    middleware, and handling WSGI requests.
+    The RestCraft class is the main entry point for the RestCraft web
+    framework. It provides methods for bootstrapping the application, managing
+    routes and middleware, and handling WSGI requests.
 
     The `__init__` method initializes the internal data structures for
     managing routes, middleware, and configuration. The `bootstrap` method
@@ -101,7 +101,7 @@ class RestCraft:
                 self._routes[method] = []
             self._routes[method].append(view)
 
-    def _import_module(self, module_path: str) -> ModuleType:
+    def _import_module(self, path: str) -> t.Union[ModuleType, t.Any]:
         """
         Import a module given its filename.
 
@@ -111,13 +111,20 @@ class RestCraft:
         Returns:
             `ModuleType:` The imported module.
         """
-        if os.path.sep in module_path:
-            module_path = module_path.replace(os.path.sep, '.')
+        if os.path.sep in path:
+            module_path = path.replace(os.path.sep, '.')
 
         try:
-            return importlib.import_module(module_path)
-        except ModuleNotFoundError as e:
-            raise ImportError(f'Could not import module {module_path}.') from e
+            obj = importlib.import_module(path)
+        except ModuleNotFoundError:
+            module_path, _, attribute_name = path.rpartition('.')
+            if attribute_name:
+                module = importlib.import_module(module_path)
+                obj = getattr(module, attribute_name)
+            else:
+                raise
+
+        return obj
 
     def _get_module_members(
         self, module: ModuleType, mt=inspect.isclass
@@ -138,32 +145,48 @@ class RestCraft:
             if member.__module__ == module.__name__:
                 yield (name, member)
 
-    def _import_view(self, view: str) -> None:
+    def _import_view(self, path: str) -> None:
         """
         Import a view module and add its routes to the application.
 
         Args:
-            `view (str):` The name of the view module to import.
+            `path (str):` The name of the view module to import.
         """
-        module = self._import_module(view)
-        for _, mview in self._get_module_members(module):
-            if not issubclass(mview, View):
-                continue
-            self._add_view(mview(self))
 
-    def _import_middleware(self, middleware_path: str) -> None:
+        result = self._import_module(path)
+
+        if inspect.isclass(result):
+            if not issubclass(result, View):
+                raise TypeError(f'View {path} must be a subclass of View.')
+            self._add_view(result(self))
+        else:
+            for _, view in self._get_module_members(result):
+                if not issubclass(view, View):
+                    continue
+                self._add_view(view(self))
+
+    def _import_middleware(self, path: str) -> None:
         """
         Imports and adds a middleware to the application.
 
         Args:
-            `middleware (str):` The fully qualified name of the middleware
+            `path (str):` The fully qualified name of the middleware
                 class.
         """
-        module = self._import_module(middleware_path)
-        for _, member in self._get_module_members(module):
-            if not issubclass(member, Middleware):
-                continue
-            self.add_middleware(member(self))
+
+        result = self._import_module(path)
+
+        if inspect.isclass(result):
+            if not issubclass(result, Middleware):
+                raise TypeError(
+                    f'Middleware {path} must be a subclass of Middleware.'
+                )
+            self.add_middleware(result(self))
+        else:
+            for _, middleware in self._get_module_members(result):
+                if not issubclass(middleware, Middleware):
+                    continue
+                self.add_middleware(middleware(self))
 
     def add_middleware(self, middleware: Middleware) -> None:
         """
