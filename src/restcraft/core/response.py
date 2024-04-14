@@ -71,7 +71,11 @@ class Response:
     }
 
     def __init__(
-        self, body: t.Any, *, status_code=200, headers: t.Dict[str, t.Any] = {}
+        self,
+        body: t.Any = None,
+        *,
+        status_code=200,
+        headers: t.Dict[str, t.Any] = {},
     ) -> None:
         """
         Initializes a new instance of the `Response` class with the given body,
@@ -192,6 +196,9 @@ class Response:
         Returns:
             bytes: The encoded response body.
         """
+        if self._body is None or self._body == '':
+            return b''
+
         return str(self._body).encode()
 
     def _get_encoded_data(self) -> bytes:
@@ -235,6 +242,9 @@ class JSONResponse(Response):
     __slots__ = ('_body', '_status', '_headers', '_encoded_data')
 
     def _encode(self) -> bytes:
+        if self._body is None or self._body == '':
+            return b''
+
         return json.dumps(self._body).encode()
 
 
