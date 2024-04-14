@@ -1,5 +1,7 @@
 import typing as t
 
+__all__ = ('HTTPException', 'RestiPyException')
+
 
 class RestiPyException(Exception):
     """Base exception class for errors."""

@@ -6,6 +6,7 @@ import traceback
 import typing as t
 from types import ModuleType
 
+from restipy.conf import settings
 from restipy.core.exceptions import HTTPException, RestiPyException
 from restipy.core.middleware import Middleware
 from restipy.core.request import Request
@@ -22,8 +23,7 @@ class RestiPy:
 
     The `__init__` method initializes the internal data structures for
     managing routes, middleware, and configuration. The `bootstrap` method
-    sets up the application by loading the configuration, importing views and
-    middleware.
+    sets up the application by importing views and middleware.
 
     The `_add_view` method adds a view to the application's route mapping. The
     `_import_module` and `_get_module_members` methods are utility functions
@@ -44,18 +44,16 @@ class RestiPy:
     executing any registered middleware and the matched view's handler.
     """
 
-    __slots__ = ('ctx', 'config', '_routes', '_middlewares')
+    __slots__ = ('ctx', '_routes', '_middlewares')
 
     def __init__(self) -> None:
         """
         Initializes a new instance of the RestiPy class.
 
         This constructor sets up the internal data structures for managing
-        routes, middleware, and configuration.
+        routes and middleware.
 
         Attributes:
-            `config (ModuleType):` The module containing the application
-                settings.
             `ctx (ThreadSafeContext):` The application's context manager.
             `_routes (dict[str, list[Route]]):` A dictionary mapping HTTP
                 methods to lists of routes.
@@ -68,23 +66,14 @@ class RestiPy:
         """
         self.ctx = ThreadSafeContext()
 
-        self.config: ModuleType
-
         self._routes: dict[str, list[View]] = {}
 
         self._middlewares: list[Middleware] = []
 
-    def bootstrap(self, settings: ModuleType):
+    def bootstrap(self):
         """
-        Bootstraps the application by setting the configuration, importing
-        views, and middleware.
-
-        Args:
-            `settings (ModuleType):` The module containing the application
-                settings.
+        Bootstraps the application by importing views, and middleware.
         """
-        self.config = settings
-
         for view in settings.VIEWS:
             self._import_view(view)
 
@@ -381,7 +370,7 @@ class RestiPy:
             message and the exception traceback.
 
             If the application is running in debug mode
-            (self.config.DEBUG is True), the response will include the full
+            (settings.DEBUG is True), the response will include the full
             exception traceback. Otherwise, a generic "Something went wrong,
             try again later" error message is returned.
 
@@ -402,7 +391,7 @@ class RestiPy:
                 'message': 'Something went wrong, try again later.',
             }
 
-            if self.config.DEBUG:
+            if settings.DEBUG:
                 exc_body['error'] = {
                     'exception': str(e),
                     'stacktrace': stacktrace.splitlines(),

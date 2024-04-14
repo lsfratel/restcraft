@@ -9,6 +9,9 @@ if t.TYPE_CHECKING:
     from restipy.core.application import RestiPy
 
 
+__all__ = ('View',)
+
+
 class View:
     """
     The `View` class is the base class for all views in the Restipy

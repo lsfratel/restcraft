@@ -10,11 +10,15 @@ import tempfile
 import typing as t
 from urllib.parse import parse_qsl, urljoin
 
+from restipy.conf import settings
 from restipy.core.exceptions import HTTPException
 from restipy.utils.helpers import UploadedFile, env_to_h
 
 if t.TYPE_CHECKING:
     from restipy.core.application import RestiPy
+
+
+__all__ = ('Request',)
 
 
 class Request:
@@ -79,7 +83,7 @@ class Request:
 
         content_length = self.content_length
         try:
-            max_body_size = self.app.config.MAX_BODY_SIZE
+            max_body_size = settings.MAX_BODY_SIZE
         except AttributeError as e:
             raise HTTPException(
                 'Missing MAX_BODY_SIZE in settings.',

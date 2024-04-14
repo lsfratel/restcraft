@@ -1,3 +1,7 @@
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
 DEBUG = True
 
 MAX_BODY_SIZE = 124 * 1024
@@ -14,6 +18,6 @@ MIDDLEWARES = {
 }
 
 try:
-    from test_app.local_settings import *  # type: ignore # noqa: F403
+    from .local_settings import *  # type: ignore # noqa: F403
 except ImportError:
     pass

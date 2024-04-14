@@ -1,6 +1,7 @@
 import unittest
 from io import BytesIO
 
+from restipy.conf import settings
 from restipy.core import Request
 from restipy.core.exceptions import HTTPException
 
@@ -131,7 +132,7 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(self.req.content_type, content_type)
 
     def test_request_max_body_size(self):
-        self.req.app.config.MAX_BODY_SIZE = 10  # type: ignore
+        settings.MAX_BODY_SIZE = 10  # type: ignore
         with self.assertRaises(HTTPException) as e:
             _ = self.req.json
         resp = e.exception

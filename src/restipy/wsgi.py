@@ -1,9 +1,7 @@
-import types as t
-
 from restipy.core.application import RestiPy
 
 
-def get_wsgi_application(settings: t.ModuleType):
+def get_wsgi_application():
     """
     Returns a WSGI application instance.
 
@@ -15,6 +13,6 @@ def get_wsgi_application(settings: t.ModuleType):
     """
     app = RestiPy()
 
-    app.bootstrap(settings)
+    app.bootstrap()
 
     return app
