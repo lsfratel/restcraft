@@ -98,7 +98,7 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(self.req.path, '/hello')
 
     def test_request_query(self):
-        query = {'a': ['1'], 'name': ['lucas']}
+        query = {'a': '1', 'name': 'lucas'}
         self.assertDictEqual(self.req.query, query)  # type: ignore
 
     def test_request_host(self):

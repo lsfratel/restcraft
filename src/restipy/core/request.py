@@ -64,20 +64,21 @@ class Request:
 
     def _read_body(self):
         """
-        Reads and returns the request body.
+        Streams the request body in chunks, yielding each chunk as it is read.
+        Stops reading if the body exceeds the configured maximum size.
 
-        Returns:
-            `bytes or None:` The request body, or None if the request method is
-                not 'POST', 'PUT', or 'PATCH'.
+        Yields:
+            bytes: Next chunk of the request body.
+        Raises:
+            HTTPException: If the body exceeds the maximum size or configuration issues.
         """
         if self.method not in ('POST', 'PUT', 'PATCH'):
             return None
 
         content_length = self.content_length
-
         try:
             max_body_size = self.app.config.MAX_BODY_SIZE
-        except Exception as e:
+        except AttributeError as e:
             raise HTTPException(
                 'Missing MAX_BODY_SIZE in settings.',
                 status_code=500,
@@ -91,16 +92,23 @@ class Request:
                 code='REQUEST_BODY_TOO_LARGE',
             )
 
-        input = self.env['wsgi.input']
-        toread = max(content_length, max_body_size)
+        input_stream = self.env['wsgi.input']
         readbytes = 0
 
-        while readbytes < toread:
-            chunk = input.read(64 * 1024)
+        while readbytes < content_length:
+            chunk = input_stream.read(
+                min(64 * 1024, content_length - readbytes)
+            )
             if not chunk:
                 break
-            readbytes += len(chunk)
             yield chunk
+            readbytes += len(chunk)
+            if readbytes > max_body_size:
+                raise HTTPException(
+                    'Request body too large.',
+                    status_code=413,
+                    code='REQUEST_BODY_TOO_LARGE',
+                )
 
     def _parse_url_encoded_form(self):
         """

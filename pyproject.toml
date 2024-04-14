@@ -18,7 +18,7 @@ build-backend = "pdm.backend"
 distribution = true
 
 [tool.pdm.scripts]
-dev = "gunicorn --reload tests.test_app.wsgi"
+dev = "gunicorn --reload --threads 2 tests.test_app.wsgi"
 test = "python -m coverage run -m unittest"
 coverage = "python -m coverage"
 tc = { composite = ["test", "coverage html"] }
