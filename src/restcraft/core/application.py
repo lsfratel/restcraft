@@ -48,21 +48,19 @@ class RestCraft:
 
     def __init__(self) -> None:
         """
-        Initializes a new instance of the RestCraft class.
+        The `__init__` method initializes the RestCraft application by setting
+        up the internal data structures for managing routes, middleware, and
+        configuration.
 
-        This constructor sets up the internal data structures for managing
-        routes and middleware.
+        The `self.ctx` attribute is a `ThreadSafeContext` object that provides
+        a thread-safe context for the application.
 
-        Attributes:
-            `ctx (ThreadSafeContext):` The application's context manager.
-            `_routes (dict[str, list[Route]]):` A dictionary mapping HTTP
-                methods to lists of routes.
-            `_before_route_m (list[Callable]):` A list of middleware functions
-                to be executed before a route is matched.
-            `_before_m (list[Callable]):` A list of middleware functions to be
-                executed before a request is processed.
-            `_after_m (list[Callable]):` A list of middleware functions to be
-                executed after a request is processed.
+        The `self._routes` attribute is a dictionary that maps route paths to
+        lists of `View` objects, representing the registered routes and their
+        corresponding views.
+
+        The `self._middlewares` attribute is a list of `Middleware` objects,
+        representing the registered middleware for the application.
         """
         self.ctx = ThreadSafeContext()
 
@@ -85,7 +83,7 @@ class RestCraft:
         Adds a view to the application's routing table.
 
         Args:
-            `view (View):` The view to be added.
+            view (View): The view to be added.
 
         This method compiles the route pattern in the view, and then adds the
         view to the appropriate list of routes based on the HTTP methods it
@@ -106,10 +104,10 @@ class RestCraft:
         Import a module given its filename.
 
         Args:
-            `filename (str):` The filename of the module to import.
+            filename (str): The filename of the module to import.
 
         Returns:
-            `ModuleType:` The imported module.
+            ModuleType: The imported module.
         """
         if os.path.sep in path:
             module_path = path.replace(os.path.sep, '.')
@@ -133,12 +131,12 @@ class RestCraft:
         Get the members of a module that satisfy a given condition.
 
         Args:
-            `module (ModuleType):` The module to inspect.
-            `mt (Callable):` The condition that the members should satisfy.
+            module (ModuleType): The module to inspect.
+            mt (Callable): The condition that the members should satisfy.
                 Defaults to `inspect.isclass`.
 
         Yields:
-            `Tuple[str, Any]:` A tuple containing the name and member that
+            Tuple[str, Any]: A tuple containing the name and member that
                 satisfy the condition.
         """
         for name, member in inspect.getmembers(module, mt):
@@ -150,7 +148,7 @@ class RestCraft:
         Import a view module and add its routes to the application.
 
         Args:
-            `path (str):` The name of the view module to import.
+            path (str): The name of the view module to import.
         """
 
         result = self._import_module(path)
@@ -170,7 +168,7 @@ class RestCraft:
         Imports and adds a middleware to the application.
 
         Args:
-            `path (str):` The fully qualified name of the middleware
+            path (str): The fully qualified name of the middleware
                 class.
         """
 
@@ -193,7 +191,7 @@ class RestCraft:
         Adds a middleware to the application.
 
         Args:
-            `middleware:` The middleware object to be added.
+            middleware: The middleware object to be added.
 
         This method adds the specified middleware to the application's list of
         middlewares.
@@ -210,16 +208,16 @@ class RestCraft:
         Matches the given path and method to a route in the application.
 
         Args:
-            `path (str):` The path to match against the routes.
-            `method (str):` The HTTP method to match against the routes.
+            path (str): The path to match against the routes.
+            method (str): The HTTP method to match against the routes.
 
         Returns:
-            `tuple[Route, dict[str, str | t.Any]]:` A tuple containing the
+            tuple[Route, dict[str, str | t.Any]]: A tuple containing the
                 matched route and a dictionary of captured parameters from
                 the path.
 
         Raises:
-            `RouteNotFound:` If no matching route is found.
+            RouteNotFound: If no matching route is found.
         """
         methods = [method]
 
@@ -244,11 +242,11 @@ class RestCraft:
         Handle the WSGI callable interface.
 
         Args:
-            `env (dict):` The WSGI environment dictionary.
-            `start_response (callable):` The WSGI start_response callable.
+            env (dict): The WSGI environment dictionary.
+            start_response (callable): The WSGI start_response callable.
 
         Returns:
-            `Iterable[bytes]:` An iterable of response bytes.
+            Iterable[bytes]: An iterable of response bytes.
         """
         return self.wsgi(env, start_response)
 
@@ -259,11 +257,11 @@ class RestCraft:
         Handle the WSGI request and response.
 
         Args:
-            `env (dict):` The WSGI environment dictionary.
-            `start_response (callable):` The WSGI start_response callable.
+            env (dict): The WSGI environment dictionary.
+            start_response (callable): The WSGI start_response callable.
 
         Returns:
-            `Iterable[bytes]:` An iterable of response bytes.
+            Iterable[bytes]: An iterable of response bytes.
         """
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
@@ -283,28 +281,44 @@ class RestCraft:
         self, env: t.Dict
     ) -> t.Tuple[bytes, str, t.List[t.Tuple[str, str]]]:
         """
-        Process the incoming request and return a response.
+        Process the incoming WSGI request and return the appropriate response.
+
+        This method is responsible for handling the entire request processing
+        pipeline, including:
+        - Iterating through registered middleware components and calling their
+          `before_route`, `before_handler`, and `after_handler` methods.
+        - Matching the incoming request path and HTTP method to a registered
+          route.
+        - Executing the `before_handler`, `handler`, and `after_handler` hooks
+          of the matched view.
+        - Handling any exceptions that occur during the request processing,
+          including `RestCraftException` and unhandled exceptions.
+        - Returning the final response object after all middleware components
+          have performed any necessary post-processing or cleanup tasks.
 
         Args:
-            `env (dict):` The WSGI environment dictionary.
+            env (dict): The WSGI environment dictionary.
 
         Returns:
-            `Response:` The response object.
-
-        Raises:
-            `HTTPException:` If an HTTP exception occurs.
-            `Exception:` If any other exception occurs.
+            Tuple[bytes, str, List[Tuple[str, str]]]: A tuple containing the
+                response data, status, and headers.
         """
         env['restcraft.app'] = self
         self.ctx.request = req = Request(env)
 
         try:
             """
-            Iterates through the registered middleware components and calls
-            the `before_route` method on each one.
+            This code block iterates through the registered middleware
+            components and calls their `before_route` method for the current
+            request. If any middleware component returns a `Response` object,
+            it is immediately returned as the final response, short-circuiting
+            the request processing pipeline.
 
-            If any middleware component returns a `Response` object, it is
-            immediately returned, short-circuiting the request processing.
+            The `before_route` method of each middleware component is
+            responsible for performing any necessary preprocessing or
+            validation of the incoming request before it is passed to the
+            application's route handlers. This allows middleware to modify or
+            reject requests before they are processed further.
             """
             for middleware in self._middlewares:
                 early = middleware.before_route(req)
@@ -322,11 +336,17 @@ class RestCraft:
             req.set_params = params
 
             """
-            Iterates through the registered middleware components and calls
-            the `before_handler` method on each one.
+            This code block iterates through the registered middleware
+            components and calls their `before_handler` method for the current
+            request. If any middleware component returns a `Response` object,
+            it is immediately returned as the final response, short-circuiting
+            the request processing pipeline.
 
-            If any middleware component returns a `Response` object, it is
-            immediately returned, short-circuiting the request processing.
+            The `before_handler` method of each middleware component is
+            responsible for performing any necessary preprocessing or
+            validation of the incoming request before it is passed to the
+            application's route handlers. This allows middleware to modify or
+            reject requests before they are processed further.
             """
             for middleware in self._middlewares:
                 early = middleware.before_handler(req)
@@ -334,17 +354,21 @@ class RestCraft:
                     return early.get_response()
 
             """
-            Process the incoming request through the registered view.
+            Handles the request by calling the appropriate view methods.
 
-            This block of code is responsible for executing the before,
-            handler, and after hooks of the matched view. If any of these
-            hooks return a `Response` object, the request processing is
-            short-circuited and the response is returned immediately.
+            Calls the before_handler method of the view, and if it returns a
+            Response object, returns that response. Otherwise, calls the
+            handler method of the view. If the handler method does not return a
+            Response object, raises a RestCraftException.
 
-            If the view handler does not return a `Response` object, an
-            exception is raised. If a `RestCraftException` is raised during the
-            request processing, the `on_exception` hook of the view is
-            executed, and the returned response is returned.
+            After the handler method is called, calls the after_handler method
+            of the view.
+
+            If a RestCraftException is raised, calls the on_exception method of
+            the view. If the on_exception method does not return a Response
+            object, raises a RestCraftException.
+
+            Returns the response from the handler or on_exception method.
             """
             try:
                 early = view.before_handler(req)
@@ -396,25 +420,18 @@ class RestCraft:
             return out.get_response()
         except Exception as e:
             """
-            Handles an unhandled exception that occurred during the request
-            processing.
+            Handles an unexpected exception that occurred during the processing
+            of a request.
 
-            This code block is executed when an unhandled exception occurs
-            during the request processing. It logs the exception traceback to
-            the WSGI error stream, and returns a JSON response with an error
-            message and the exception traceback.
+            This code block is executed when an unhandled exception is raised
+            during the execution of a view handler or middleware component.
+            It logs the exception details to the WSGI error stream, and
+            constructs a JSON response with a generic error message and,
+            if `settings.DEBUG` is `True`, the exception details and stack
+            trace.
 
-            If the application is running in debug mode
-            (settings.DEBUG is True), the response will include the full
-            exception traceback. Otherwise, a generic "Something went wrong,
-            try again later" error message is returned.
-
-            Args:
-                `e (Exception):` The unhandled exception that occurred.
-
-            Returns:
-                `Response:` A JSON response with an error message and, if in
-                    debug mode, the exception traceback.
+            The constructed JSON response is then returned as the final
+            response for the request.
             """
             traceback.print_exc()
             stacktrace = traceback.format_exc()

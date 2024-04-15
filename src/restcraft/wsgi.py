@@ -3,13 +3,13 @@ from restcraft.core.application import RestCraft
 
 def get_wsgi_application() -> RestCraft:
     """
-    Returns a WSGI application instance.
+    Returns a RestCraft application instance.
 
-    Args:
-        `settings (ModuleType):` The settings module for the application.
+    This function creates a new instance of the RestCraft class, bootstraps it,
+    and returns the instance.
 
     Returns:
-        `RestCraft:` An instance of the RestCraft application.
+        RestCraft: A RestCraft application instance.
     """
     app = RestCraft()
 

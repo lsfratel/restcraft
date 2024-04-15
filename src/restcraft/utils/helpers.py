@@ -4,51 +4,36 @@ import typing as t
 
 class ThreadSafeContext:
     """
-    A context manager that provides a thread-local storage for storing and
-    retrieving arbitrary data.
-
-    The `ContextManager` class provides a simple way to store and retrieve
-    data in a thread-local context. This can be useful for passing data
-    between functions or components without having to pass it explicitly
-    as arguments.
-
-    The context is stored in a dictionary-like object, where keys are used
-    to access the stored values. The context is scoped to the current thread,
-    so each thread has its own independent context.
+    A thread-safe context manager that allows storing and accessing values in
+    a thread-local context.
     """
 
     def __init__(self) -> None:
         """
-        Sets the `_ctx` attribute of the `ContextManager` instance to a new
-        `threading.local()` object. This creates a thread-local storage for
-        storing and retrieving data in the context manager.
+        Initializes a new instance of the ThreadSafeContext class.
         """
         object.__setattr__(self, '_ctx', threading.local())
 
     def clear(self) -> None:
         """
-        Clears the thread-local context dictionary.
+        Clears the context by removing all stored values.
         """
         if hasattr(self._ctx, 'ctx'):
             self._ctx.ctx.clear()
 
     def __getattr__(self, name: str) -> t.Any:
         """
-        Retrieves a value from the thread-local context dictionary. If the
-        requested key is not found in the context, an `AttributeError` is
-        raised with a descriptive error message.
+        Retrieves the value associated with the specified name from the
+        context.
 
         Args:
-            `name (str):` The key to retrieve from the thread-local context
-                dictionary.
+            name (str): The name of the value to retrieve.
 
         Returns:
-            `Any:` The value associated with the requested key in the
-            thread-local context.
+            Any: The value associated with the specified name.
 
         Raises:
-            `AttributeError:` If the requested key is not found in the
-            thread-local context.
+            AttributeError: If the specified name is not set in the context.
         """
         try:
             return self._ctx.ctx[name]
@@ -57,17 +42,11 @@ class ThreadSafeContext:
 
     def __setattr__(self, name: str, value: t.Any) -> None:
         """
-        Sets a value in the thread-local context dictionary.
+        Sets the value associated with the specified name in the context.
 
         Args:
-            `name (str):` The key to set in the thread-local context
-                dictionary.
-            `value (Any):` The value to associate with the key in the
-                thread-local context.
-
-        Raises:
-            `AttributeError:` If the `name` argument is not a valid attribute
-                name.
+            name (str): The name of the value to set.
+            value (Any): The value to associate with the specified name.
         """
         if not hasattr(self._ctx, 'ctx'):
             self._ctx.ctx = {}
@@ -76,17 +55,13 @@ class ThreadSafeContext:
 
     def __delattr__(self, name: str) -> None:
         """
-        Removes a value from the thread-local context dictionary. If the
-        requested key is not found in the context, an `AttributeError` is
-        raised with a descriptive error message.
+        Removes the value associated with the specified name from the context.
 
         Args:
-            `name (str):` The key to remove from the thread-local context
-                dictionary.
+            name (str): The name of the value to remove.
 
         Raises:
-            `AttributeError:` If the requested key is not found in the
-                thread-local context.
+            AttributeError: If the specified name is not set in the context.
         """
         try:
             del self._ctx.ctx[name]
@@ -95,19 +70,17 @@ class ThreadSafeContext:
 
     def __getitem__(self, name: str) -> t.Any:
         """
-        Retrieves a value from the thread-local context dictionary.
+        Retrieves the value associated with the specified name from the
+        context.
 
         Args:
-            `name (str):` The key to retrieve from the thread-local context
-                dictionary.
+            name (str): The name of the value to retrieve.
 
         Returns:
-            `Any:` The value associated with the requested key in the
-                thread-local context.
+            Any: The value associated with the specified name.
 
         Raises:
-            `AttributeError:` If the requested key is not found in the
-                thread-local context.
+            AttributeError: If the specified name is not set in the context.
         """
         try:
             return self._ctx.ctx[name]
@@ -116,17 +89,11 @@ class ThreadSafeContext:
 
     def __setitem__(self, name: str, value: t.Any) -> None:
         """
-        Sets a value in the thread-local context dictionary.
+        Sets the value associated with the specified name in the context.
 
         Args:
-            `name (str):` The key to set in the thread-local context
-                dictionary.
-            `value (Any):` The value to associate with the key in the
-                thread-local context.
-
-        Raises:
-            `AttributeError:` If the `name` argument is not a valid attribute
-                name.
+            name (str): The name of the value to set.
+            value (Any): The value to associate with the specified name.
         """
         if not hasattr(self._ctx, 'ctx'):
             self._ctx.ctx = {}
@@ -136,18 +103,12 @@ class ThreadSafeContext:
 
 class UploadedFile:
     """
-    Represents an uploaded file, containing the filename, content type,
-    and file path.
-
-    Args:
-        `filename (str):` The name of the uploaded file.
-        `content_type (str):` The MIME type of the uploaded file.
-        `filepath (str):` The file path of the uploaded file.
+    Represents an uploaded file.
 
     Attributes:
-        `filename (str):` The name of the uploaded file.
-        `content_type (str):` The MIME type of the uploaded file.
-        `filepath (str):` The file path of the uploaded file.
+        filename (str): The name of the uploaded file.
+        content_type (str): The content type of the uploaded file.
+        filepath (str): The file path of the uploaded file.
     """
 
     __slots__ = ('filename', 'content_type', 'filepath')
@@ -163,29 +124,28 @@ class UploadedFile:
 
 def pep3333(value: str, errors='strict') -> str:
     """
-    Converts a string value to a UTF-8 encoded byte string, handling encoding
-    errors according to the specified error handling mode.
+    Convert the given value to a string using the PEP 3333 encoding rules.
 
     Args:
-        `value (str):` The string value to be converted.
-        `errors (str, optional):` The error handling mode, defaults to
-            'strict'.
+        value (str): The value to be converted.
+        errors (str, optional): The error handling scheme to use for encoding
+            errors. Defaults to 'strict'.
 
     Returns:
-        `str:` The UTF-8 encoded string.
+        str: The converted string.
     """
     return str(value).encode('latin1').decode('utf8', errors)
 
 
 def env_to_h(v: str) -> str:
     """
-    Converts an environment variable string to a hyphen-separated lowercase
+    Converts an environment variable name to a hyphen-separated lowercase
     string.
 
     Args:
-        `v (str):` The environment variable string to be converted.
+        v (str): The environment variable name.
 
     Returns:
-        `str:` The converted string with hyphens and lowercase.
+        str: The converted string.
     """
     return v.replace('_', '-').lower()

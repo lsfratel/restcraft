@@ -31,31 +31,13 @@ __all__ = (
 
 class Response:
     """
-    Represents a base response object for a RESTful API.
+    Represents an HTTP response.
 
-    The `Response` class provides a set of properties and methods to manage
-    the response data, status code, and headers for a RESTful API. It includes
-    functionality to handle common HTTP response headers and status codes, as
-    well as methods to get the encoded response data, status line, and headers.
-
-    The class has the following attributes:
-    - `_body`: The response body data.
-    - `_status`: The HTTP status code for the response.
-    - `_headers`: The HTTP headers for the response.
-
-    The class also has the following methods:
-    - `header_list`: Returns a list of headers in the response, with certain
-      headers removed based on the response status code.
-    - `header`: Returns the headers of the response.
-    - `status`: Returns the status of the response.
-    - `status_line`: Returns the status line corresponding to the current
-      status code.
-    - `set_status`: Sets the status code for the response.
-    - `body`: Returns the body of the response.
-    - `set_body`: Sets the data for the response body.
-    - `_get_encoded_data`: Returns the encoded version of the response body.
-    - `get_response`: Returns the response data, status line, and headers as a
-      tuple.
+    Args:
+        body (Any, optional): The response body. Defaults to None.
+        status_code (int, optional): The HTTP status code. Defaults to 200.
+        headers (Dict[str, Any], optional): The response headers.
+            Defaults to None.
     """
 
     default_headers = {'content-type': 'text/plain; charset=utf-8'}
@@ -77,24 +59,17 @@ class Response:
         self,
         body: t.Any = None,
         *,
-        status_code=200,
+        status_code: int = 200,
         headers: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> None:
         """
-        Initializes a new instance of the `Response` class with the given body,
-        status code, and headers.
+        Initializes a new instance of the Response class.
 
         Args:
-            `body (Any):` The response body data.
-            `status_code (int, optional):` The HTTP status code for the
-                response. Defaults to 200.
-            `headers (dict[str, Any], optional):` The HTTP headers for the
-                response. Defaults to an empty dictionary.
-
-        Attributes:
-            `_body (Any):` The response body data.
-            `_status (int):` The HTTP status code for the response.
-            `_headers (dict[str, Any]):` The HTTP headers for the response.
+            body (Any, optional): The response body. Defaults to None.
+            status_code (int, optional): The HTTP status code. Defaults to 200.
+            headers (Dict[str, Any], optional): The response headers.
+                Defaults to None.
         """
         self._body = body
         self._status = status_code
@@ -106,16 +81,10 @@ class Response:
     @property
     def header_list(self) -> t.List[t.Tuple[str, str]]:
         """
-        Returns a list of headers in the response.
-
-        If the response status is in the `bad_headers` dictionary,
-        it removes any headers specified in the dictionary from the response
-        headers. Then, it converts the remaining headers into a list of tuples,
-        where each tuple contains the header name and its corresponding value.
+        Gets the response headers as a list of tuples.
 
         Returns:
-            `list[tuple[str, str]]:` A list of tuples representing the headers
-                in the response.
+            List[Tuple[str, str]]: The response headers.
         """
         if self._status in self.bad_headers:
             bad_headers = self.bad_headers[self._status]
@@ -127,44 +96,43 @@ class Response:
     @property
     def header(self) -> t.Dict[str, str]:
         """
-        Returns the headers of the response.
+        Gets the response headers.
 
         Returns:
-            `dict[str, str]:` The headers of the response.
+            Dict[str, str]: The response headers.
         """
         return self._headers
 
     @property
     def status(self) -> int:
         """
-        Returns the status of the response.
+        Gets the HTTP status code.
 
         Returns:
-            `int:` The status of the response.
+            int: The HTTP status code.
         """
         return self._status
 
     @property
     def status_line(self) -> str:
         """
-        Returns the status line corresponding to the current status code.
+        Gets the HTTP status line.
 
         Returns:
-            `str:` The status line corresponding to the current status code.
+            str: The HTTP status line.
         """
         return _HTTP_STATUS_LINES[self._status]
 
     @status.setter
     def set_status(self, status: int) -> None:
         """
-        Sets the status of the response.
+        Sets the HTTP status code.
 
         Args:
-            `status (int):` The status code to set for the response.
+            status (int): The HTTP status code.
 
         Raises:
-            `RestCraftException:` If the provided `status` is not a valid HTTP
-                status code.
+            InvalidStatusCode: If the status code is invalid.
         """
         if status not in _HTTP_CODES:
             raise InvalidStatusCode()
@@ -173,26 +141,26 @@ class Response:
     @property
     def body(self) -> t.Any:
         """
-        Returns the body of the response.
+        Gets the response body.
 
         Returns:
-            `Any:` The body of the response.
+            Any: The response body.
         """
         return self._body
 
     @body.setter
     def set_body(self, body: t.Any) -> None:
         """
-        Set the data for the response body.
+        Sets the response body.
 
         Args:
-            `data (Any):` The data to be set as the response body.
+            body (Any): The response body.
         """
         self._body = body
 
     def _encode(self) -> bytes:
         """
-        Encodes the response body as a byte string.
+        Encodes the response body.
 
         Returns:
             bytes: The encoded response body.
@@ -204,20 +172,20 @@ class Response:
 
     def _get_encoded_data(self) -> bytes:
         """
-        Returns the encoded version of the response body.
+        Gets the encoded response data.
 
         Returns:
-            `bytes:` The encoded version of the response body.
+            bytes: The encoded response data.
         """
         return self._encode()
 
     def get_response(self) -> t.Tuple[bytes, str, t.List[t.Tuple[str, str]]]:
         """
-        Returns the encoded response data, status line, and headers.
+        Gets the complete HTTP response.
 
         Returns:
-            `tuple[bytes, str, list[str]]:` The encoded response data, status
-                line, and headers.
+            Tuple[bytes, str, List[Tuple[str, str]]]: The response data,
+                status line, and headers.
         """
         data = self._get_encoded_data()
         self.header['content-length'] = str(len(data))
@@ -229,20 +197,34 @@ class Response:
         """
         Returns a string representation of the Response object.
 
-        The string representation includes the class name and the status line.
-
         Returns:
-            `str:` The string representation of the Response object.
+            str: The string representation of the Response object.
         """
         return f'<{self.__class__.__name__} {self.status_line}>'
 
 
 class JSONResponse(Response):
+    """
+    Represents a JSON response.
+
+    Inherits from the `Response` class and provides functionality to encode
+    the response body as JSON.
+
+    Attributes:
+        default_headers (dict): Default headers for the JSON response.
+    """
+
     default_headers = {'content-type': 'application/json; charset=utf-8'}
 
     __slots__ = ('_body', '_status', '_headers', '_encoded_data')
 
     def _encode(self) -> bytes:
+        """
+        Encodes the response body as JSON.
+
+        Returns:
+            bytes: The encoded JSON data.
+        """
         if self._body is None or self._body == '':
             return b''
 
@@ -251,22 +233,15 @@ class JSONResponse(Response):
 
 class RedirectResponse(Response):
     """
-    Represents a redirect response, which is used to redirect the client to a
-    different URL.
+    Represents a redirect response.
 
-    The `RedirectResponse` class is a subclass of the `Response` class, and is
-    used to create a redirect response with a specified location and status
-    code.
-    The status code is either 301 (Moved Permanently) or 302 (Found), depending
-    on the `permanent` parameter.
-
-    The `_encode` method overrides the base class implementation to return an
-    empty byte string, since redirect responses typically do not have a
-    response body.
-
-    The `__repr__` method returns a string representation of the
-    `RedirectResponse` object, including the class name, status line, and
-    redirection location.
+    Args:
+        location (str): The URL to redirect to.
+        body (Any, optional): The response body. Defaults to None.
+        permanent (bool, optional): Indicates if the redirect is permanent.
+            Defaults to False.
+        headers (Dict[str, Any], optional): Additional headers to include in
+            the response. Defaults to {}.
     """
 
     __slots__ = ('_body', '_status', '_headers', '_encoded_data')
@@ -279,19 +254,6 @@ class RedirectResponse(Response):
         permanent: bool = False,
         headers: t.Dict[str, t.Any] = {},
     ):
-        """
-        Initializes a new instance of the `RedirectResponse` class with the
-        given location and status code.
-
-        Args:
-            `location (str):` The URL to redirect to.
-            `permanent (bool, optional):` If True, uses 301 Moved Permanently.
-                Otherwise, uses 302 Found.
-            `body (Any, optional):` The response body data, generally empty
-                for redirects.
-            `headers (dict[str, Any], optional):` Additional HTTP headers for
-                the response.
-        """
         status_code = 301 if permanent else 302
         headers = headers or {}
         headers['location'] = location
@@ -299,48 +261,38 @@ class RedirectResponse(Response):
 
     def _encode(self) -> bytes:
         """
-        Redirection responses typically do not need to encode body data since
-        the body is often empty.
+        Encodes the response data into bytes.
 
         Returns:
-            `bytes:` The encoded version of the response body, typically empty
-                for redirects.
+            bytes: The encoded response data.
         """
         return b''
 
     def __repr__(self) -> str:
         """
-        Returns a string representation of the RedirectResponse object.
+        Returns a string representation of the Response object.
 
-        The string representation includes the class name, status line, and
-        redirection location.
+        The string representation includes the class name, status line,
+        and location header.
 
         Returns:
-            `str:` The string representation of the RedirectResponse object.
+            str: The string representation of the Response object.
         """
         return f'<{self.__class__.__name__} {self.status_line} {self.header["location"]}>'  # noqa: E501
 
 
 class FileResponse(Response):
     """
-    Represents a file response that can be sent to the client.
+    Represents a response that sends a file to the client.
 
-    The `FileResponse` class is used to send a file as the response to a
-    client request. It handles different types of file input, such as file
-    paths, byte strings, and generators, and sets the appropriate headers for
-    the file response.
-
-    The class inherits from the `Response` class and adds additional
-    attributes and methods specific to file responses, such as the file name,
-    attachment status, and encoding of the file data.
-
-    The `_set_headers()` method sets the `content-disposition` header based on
-    whether the file should be displayed inline or as an attachment. The
-    `_encode()` method handles the encoding of the file data, supporting
-    different types of file input.
-
-    The `get_response()` method prepares the complete response data, including
-    the encoded file data, status line, and headers.
+    Args:
+        file (Union[str, bytes, Generator]): The file to be sent. It can be a
+            file path, bytes, or a generator function.
+        filename (str): The name of the file.
+        attachment (bool, optional): Whether the file should be treated as an
+            attachment. Defaults to False.
+        headers (Dict[str, Any], optional): Additional headers to be included
+            in the response. Defaults to {}.
     """
 
     default_headers = {'content-type': 'application/octet-stream'}
@@ -362,22 +314,6 @@ class FileResponse(Response):
         attachment: bool = False,
         headers: t.Dict[str, t.Any] = {},
     ):
-        """
-        Initializes a new instance of the `FileResponse` class.
-
-        Args:
-            `file (Union[str, bytes, Generator]):` The file to be included in
-                the response. Can be a file path, byte string, or generator.
-            `filename (str):` The name of the file to be included in the
-                response.
-            `attachment (bool, optional):` If True, the file will be sent as an
-                attachment. Defaults to False.
-            `headers (dict[str, Any], optional):` Additional headers to be
-                included in the response. Defaults to an empty dictionary.
-
-        Raises:
-            `ValueError:` If the provided file path does not exist.
-        """
         super().__init__(body=None, headers=headers)
         self._filename = filename
         self._attachment = attachment
@@ -395,9 +331,7 @@ class FileResponse(Response):
 
     def _set_headers(self) -> None:
         """
-        Sets the appropriate headers for the file response, including the
-        content disposition type (attachment or inline) and the quoted
-        filename.
+        Sets the headers for the response.
         """
         disposition_type = 'attachment' if self._attachment else 'inline'
         filename_quoted = quote(self._filename)
@@ -407,14 +341,13 @@ class FileResponse(Response):
 
     def _encode(self) -> t.Union[bytes, t.Generator[bytes, None, None]]:
         """
-        Encodes the file response body based on its type.
+        Encodes the file body into bytes or a generator.
 
-        If the body is a string, it is encoded from a file path.
-        If the body is bytes, it is returned as-is. If the body is a callable,
-        it is called and the result is returned.
+        Returns:
+            Union[bytes, Generator[bytes, None, None]]: The encoded file body.
 
         Raises:
-            `TypeError:` If the file type is not supported.
+            UnsupportedBodyType: If the body type is not supported.
         """
         if isinstance(self._body, str):
             return self._encode_from_path(self._body)
@@ -427,16 +360,13 @@ class FileResponse(Response):
 
     def _encode_from_path(self, path) -> t.Generator[bytes, None, None]:
         """
-        Reads the file at the given path in chunks and yields each chunk.
+        Reads and encodes the file from the given path.
 
         Args:
-            `path (str):` The path to the file to be read.
+            path: The path to the file.
 
         Yields:
-            `bytes:` The next chunk of the file.
-
-        Raises:
-            `TypeError:` If the file type is not supported.
+            Generator[bytes, None, None]: The encoded file data in chunks.
         """
         with open(path, 'rb') as f:
             while chunk := f.read(256 * 1024):
@@ -450,11 +380,11 @@ class FileResponse(Response):
         t.List[t.Tuple[str, str]],
     ]:
         """
-        Returns the encoded file response data, status line, and header list.
+        Gets the response data.
 
         Returns:
-            `Tuple[bytes, str, List[Tuple[str, str]]]:` The encoded file
-                response data, status line, and header list.
-        """
+            Tuple[Union[bytes, Generator[bytes, None, None]], str, List[Tuple[str, str]]]:
+                The response data, including the encoded file body, status line, and headers.
+        """  # noqa: E501
         data = self._encode()
         return (data, self.status_line, self.header_list)

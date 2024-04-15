@@ -13,30 +13,16 @@ if t.TYPE_CHECKING:
 
 class CORSMiddleware(Middleware):
     """
-    Middleware that handles Cross-Origin Resource Sharing (CORS)..
-
-    This middleware is responsible for configuring the appropriate CORS
-    headers in the response based on the settings defined in the application's
-    configuration.
-
-    The middleware checks the origin of the incoming request and determines if
-    it is allowed based on the configured CORS origins. It then sets the
-    appropriate CORS headers in the response, including:
-    - Access-Control-Allow-Origin
-    - Access-Control-Allow-Methods
-    - Access-Control-Allow-Headers
-    - Access-Control-Expose-Headers
-    - Access-Control-Allow-Credentials
-    - Access-Control-Max-Age
-
-    If the origin is not allowed, the middleware returns a 403 Forbidden
-    response.
-
-    If the incoming request method is OPTIONS, the middleware returns a 200 OK
-    response with the configured CORS headers.
+    Middleware class for handling Cross-Origin Resource Sharing (CORS) headers.
     """
 
     def __init__(self, app: RestCraft) -> None:
+        """
+        Initializes the CORSMiddleware instance.
+
+        Args:
+            app (RestCraft): The RestCraft application instance.
+        """
         super().__init__(app)
         self.origins = settings.CORS.get('origin')
         self.methods = settings.CORS.get('methods')
@@ -49,19 +35,14 @@ class CORSMiddleware(Middleware):
         self, header_key: str, header_type: str
     ) -> t.Dict[str, str]:
         """
-        Configures the CORS headers for the specified header key and header
-        type.
+        Configures the CORS headers based on the specified header key and type.
 
         Args:
-            `header_key (str):` The CORS header key to configure
-                (e.g. "Access-Control-Allow-Origin").
-            `header_type (str):` The name of the attribute on the
-                CORSMiddleware instance that contains the header value
-                (e.g. "origins").
+            header_key (str): The key of the header to configure.
+            header_type (str): The type of the header to configure.
 
         Returns:
-            `dict[str, str]:` A dictionary containing the configured CORS
-                header.
+            Dict[str, str]: A dictionary containing the configured header.
         """
         header_value = getattr(self, header_type, None)
         if not header_value:
@@ -72,13 +53,10 @@ class CORSMiddleware(Middleware):
 
     def configure_credentials(self) -> t.Dict[str, str]:
         """
-        Configures the "Access-Control-Allow-Credentials" CORS header based on
-        the value of the `credentials`.
+        Configures the 'Access-Control-Allow-Credentials' header.
 
         Returns:
-            `dict[str, str]:` A dictionary containing the configured
-                "Access-Control-Allow-Credentials" CORS header, or an empty
-                dictionary if `credentials` is falsy.
+            Dict[str, str]: A dictionary containing the configured header.
         """
         if self.credentials:
             return {'Access-Control-Allow-Credentials': 'true'}
@@ -86,13 +64,10 @@ class CORSMiddleware(Middleware):
 
     def configure_maxage(self) -> t.Dict[str, str]:
         """
-        Configures the "Access-Control-Max-Age" CORS header based on the value
-        of the `credentials` attribute.
+        Configures the 'Access-Control-Max-Age' header.
 
         Returns:
-            `dict[str, str]:` A dictionary containing the configured
-                "Access-Control-Max-Age" CORS header, or an empty dictionary
-                if `credentials` is falsy.
+            Dict[str, str]: A dictionary containing the configured header.
         """
         if self.credentials is not None:
             return {'Access-Control-Max-Age': str(self.credentials)}
@@ -102,16 +77,14 @@ class CORSMiddleware(Middleware):
         self, origin: str, allowed_origin: t.Union[str, t.List[str]]
     ) -> bool:
         """
-        Checks if the given origin is allowed based on the configured allowed
-        origins.
+        Checks if the specified origin is allowed based on the allowed origins.
 
         Args:
-            `origin (str):` The origin to check.
-            `allowed_origin (Union[str, List[str]]):` The allowed origin or
-                list of allowed origins.
+            origin (str): The origin to check.
+            allowed_origin (Union[str, List[str]]): The allowed origin(s).
 
         Returns:
-            `bool:` True if the origin is allowed, False otherwise.
+            bool: True if the origin is allowed, False otherwise.
         """
         if isinstance(allowed_origin, str):
             return origin.lower() == allowed_origin.lower()
@@ -119,16 +92,14 @@ class CORSMiddleware(Middleware):
 
     def configure_origin(self, req: Request):
         """
-        Configures the "Access-Control-Allow-Origin" CORS header based on the
-        configured allowed origins.
+        Configures the 'Access-Control-Allow-Origin' header based on the
+        request origin.
 
         Args:
-            `req (Request):` The incoming request.
+            req (Request): The incoming request.
 
         Returns:
-            `dict[str, str]:` A dictionary containing the configured
-                "Access-Control-Allow-Origin" CORS header, or an empty
-                dictionary if the origin is not allowed.
+            Dict[str, str]: A dictionary containing the configured header.
         """
         req_origin = req.origin
         header = {}
@@ -152,18 +123,14 @@ class CORSMiddleware(Middleware):
 
     def before_route(self, req: Request) -> t.Optional[Response]:
         """
-        Handles CORS (Cross-Origin Resource Sharing) for incoming requests.
+        Handles the CORS headers before routing the request.
 
-        This function is called before a route is executed, and it configures
-        the necessary CORS headers based on the configured allowed origins and
-        other CORS settings.
+        Args:
+            req (Request): The incoming request.
 
-        If the origin is not allowed, the function returns a 403 Forbidden
-        response. Otherwise, it returns a response with the configured CORS
-        headers.
-
-        If the incoming request method is 'OPTIONS', the function returns a
-        200 OK response with the configured CORS headers.
+        Returns:
+            Optional[Response]: A response if the request is an OPTIONS
+                request, None otherwise.
         """
         origin_headers = self.configure_origin(req)
 

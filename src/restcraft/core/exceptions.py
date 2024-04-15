@@ -4,7 +4,20 @@ __all__ = ('HTTPException',)
 
 
 class RestCraftException(Exception):
-    """Base exception class for errors."""
+    """
+    Defines a base exception class for RestCraft, which provides a standard
+    way to handle and report exceptions in the application.
+
+    The `RestCraftException` class provides the following features:
+
+    - Defines default values for the status code, message, and exception code.
+    - Allows overriding the default values when creating an instance of the
+      exception.
+    - Provides a `to_response()` method to convert the exception to a response
+      dictionary, which includes the exception code, message, and any
+      additional payload data.
+    - Provides a human-readable string representation of the exception.
+    """
 
     default_status_code: int = 500
     default_message: str = 'Internal server error.'
@@ -27,8 +40,14 @@ class RestCraftException(Exception):
 
     def to_response(self) -> t.Dict[str, t.Any]:
         """
-        Returns a dictionary representation of the error response that can be
-        used to generate the appropriate HTTP response.
+        Converts the exception to a response dictionary.
+
+        The response dictionary includes the exception code, message, and any
+        additional payload data.
+
+        Returns:
+            dict: A dictionary containing the exception code, message,
+                and payload.
         """
         return {
             'code': self.exception_code,
@@ -42,13 +61,18 @@ class RestCraftException(Exception):
 
 class HTTPException(RestCraftException):
     """
-    An exception class for HTTP-related errors.
+    HTTP exception base class.
 
-    This exception class inherits from the base `RestCraftException` class and
+    This exception class is used as a base for all HTTP-related exceptions. It
     provides default values for the status code, message, and exception code.
 
-    It can be used to represent various HTTP-related errors that may occur
-    during the execution of the application.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 400.
+        default_message: The default error message for this exception, which
+            is 'An unknown error has occurred.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'HTTP_EXCEPTION'.
     """
 
     default_status_code: int = 400
@@ -58,13 +82,15 @@ class HTTPException(RestCraftException):
 
 class MalformedBody(RestCraftException):
     """
-    An exception class for when the request body is malformed.
+    Exception class for a malformed request body.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when the request body is not
-    in the expected format.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 400.
+        default_message: The default error message for this exception, which
+            is 'Malformed body.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'MALFORMED_BODY'.
     """
 
     default_status_code: int = 400
@@ -74,13 +100,15 @@ class MalformedBody(RestCraftException):
 
 class ImproperlyConfigured(RestCraftException):
     """
-    An exception class for when the application is improperly configured.
+    Exception class for an improperly configured application.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when the application is not
-    properly configured, such as missing required configuration values.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 500.
+        default_message: The default error message for this exception, which
+            is 'Improperly configured.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'IMPROPERLY_CONFIGURED'.
     """
 
     default_status_code: int = 500
@@ -90,13 +118,15 @@ class ImproperlyConfigured(RestCraftException):
 
 class RequestBodyTooLarge(RestCraftException):
     """
-    An exception class for when the request body is too large.
+    Exception class for a request body that is too large.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when the request body exceeds
-    the maximum allowed size.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 413.
+        default_message: The default error message for this exception, which
+            is 'Request body too large.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'BODY_TOO_LARGE'.
     """
 
     default_status_code: int = 413
@@ -106,14 +136,15 @@ class RequestBodyTooLarge(RestCraftException):
 
 class InvalidStatusCode(RestCraftException):
     """
-    An exception class for when an invalid status code is used.
+    Exception class for an invalid status code.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when an invalid HTTP status
-    code is used, such as a code that is out of the valid range or not
-    supported by the application.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 500.
+        default_message: The default error message for this exception, which
+            is 'Invalid status code.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'INVALID_STATUS_CODE'.
     """
 
     default_status_code: int = 500
@@ -123,13 +154,15 @@ class InvalidStatusCode(RestCraftException):
 
 class FileNotFound(RestCraftException):
     """
-    An exception class for when a file is not found.
+    Exception class for a file that was not found.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when a requested file is not
-    found on the server.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 404.
+        default_message: The default error message for this exception, which
+            is 'File not found.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'FILE_NOT_FOUND'.
     """
 
     default_status_code: int = 404
@@ -139,13 +172,15 @@ class FileNotFound(RestCraftException):
 
 class UnsupportedBodyType(RestCraftException):
     """
-    An exception class for when the request body has an unsupported type.
+    Exception class for an unsupported body type.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when the request body is of a
-    type that is not supported by the application.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 500.
+        default_message: The default error message for this exception, which
+            is 'Unsupported body type.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'UNSUPPORTED_BODY_TYPE'.
     """
 
     default_status_code: int = 500
@@ -155,13 +190,15 @@ class UnsupportedBodyType(RestCraftException):
 
 class RouteNotFound(RestCraftException):
     """
-    An exception class for when a requested route is not found.
+    Exception class for a route that was not found.
 
-    This exception class inherits from the base `RestCraftException` class and
-    provides default values for the status code, message, and exception code.
-
-    It can be used to represent errors that occur when a client requests a
-    route that is not defined or implemented in the application.
+    Attributes:
+        default_status_code: The default HTTP status code for this exception,
+            which is 404.
+        default_message: The default error message for this exception, which
+            is 'Route not found.'.
+        default_exception_code: The default exception code for this exception,
+            which is 'ROUTE_NOT_FOUND'.
     """
 
     default_status_code: int = 404

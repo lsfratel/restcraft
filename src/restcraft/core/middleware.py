@@ -11,76 +11,82 @@ if t.TYPE_CHECKING:
 
 class Middleware:
     """
-    Represents a middleware component that can be used to intercept and modify
-    requests and responses in a RestCraft application.
+    Middleware class for handling pre and post request processing.
 
-    The `Middleware` class provides three main methods that can be overridden
-    to implement custom middleware functionality:
+    This class provides methods for performing actions before and after the
+    route handler is executed. It can be used to modify the request or response
+    objects, or to short-circuit the request processing by returning a
+    response.
 
-    - `before_route(self, req: Request) -> Response | None:` This method is
-      called before routing the request to the appropriate route handler. It
-      can be used to perform tasks such as authentication, authorization, or
-      request transformation.
+    Attributes:
+        app (RestCraft): The RestCraft application instance.
 
-    - `before_handler(self, req: Request) -> Response | None:` This method is
-      called before the request handler is executed. It can be used to perform
-      tasks such as logging, metrics collection, or request validation.
-
-    - `after_handler(self, req: Request, res: Response):` This method is called
-      after the request handler has been executed. It can be used to perform
-      tasks such as response transformation, caching, or error handling.
-
-    Middleware components can be registered with a `RestCraft` application
-    instance to customize the request/response processing pipeline.
+    Methods:
+        before_route(req: Request) -> Optional[Response]:
+            Called before the route handler is executed.
+        before_handler(req: Request) -> Optional[Response]:
+            Called before the route handler is executed.
+        after_handler(req: Request, res: Response) -> None:
+            Called after the route handler is executed.
     """
 
     def __init__(self, app: RestCraft) -> None:
-        """
-        Initializes a new instance of the `Middleware` class with the provided
-        `RestCraft` application.
-
-        Args:
-            `app (RestCraft):` The `RestCraft` application instance that this
-                middleware will be associated with.
-        """
         self.app = app
 
     def before_route(self, req: Request) -> t.Optional[Response]:
         """
-        This method is called before routing the request to the appropriate
-        route handler.
+        Called before the route handler is executed.
+
+        This method can be used to modify the request object or to
+        short-circuit the request processing by returning a response.
 
         Args:
-            `req (Request):` The incoming request object.
+            req (Request): The request object.
 
         Returns:
-            `Response | None:` The response object if the middleware handles
-                the request, None otherwise.
+            Optional[Response]: A response object to short-circuit the request
+                processing, or None to continue processing the request.
         """
         pass
 
     def before_handler(self, req: Request) -> t.Optional[Response]:
         """
-        This method is called before the request handler is executed.
+        Called before the route handler is executed.
+
+        This method can be used to modify the request object or to
+        short-circuit the request processing by returning a response.
 
         Args:
-            `req (Request):` The incoming request object.
+            req (Request): The request object.
 
         Returns:
-            `Response | None:` The response object or None if no response
-                is generated.
+            Optional[Response]: A response object to short-circuit the request
+                processing, or None to continue processing the request.
         """
         pass
 
     def after_handler(self, req: Request, res: Response) -> None:
         """
-        This method is called after the request handler has been executed.
+        Called after the route handler is executed.
+
+        This method can be used to modify the response object before it is
+        sent to the client.
 
         Args:
-            `req (Request):` The request object.
-            `res (Response):` The response object.
+            req (Request): The request object.
+            res (Response): The response object.
         """
         pass
 
     def __repr__(self) -> str:
+        """
+        Returns a string representation of the class instance.
+
+        This method is used to provide a human-readable string representation
+        of the class instance, which is useful for debugging and logging
+        purposes.
+
+        Returns:
+            str: A string representation of the class instance.
+        """
         return f'<{self.__class__.__name__}>'
