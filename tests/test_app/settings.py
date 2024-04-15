@@ -14,7 +14,7 @@ VIEWS = {
 }
 
 MIDDLEWARES = {
-    'restcraft.middleware.cors.CORSMiddleware',
+    # 'restcraft.middleware.cors.CORSMiddleware',
     'test_app.middlewares.test_middleware',
 }
 

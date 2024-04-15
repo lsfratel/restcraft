@@ -3,7 +3,7 @@ import os
 import typing as t
 from types import ModuleType
 
-from restcraft.core.exceptions import RestCraftException
+from restcraft.core.exceptions import ImproperlyConfigured
 
 
 class LazySettings:
@@ -21,14 +21,12 @@ class LazySettings:
     def _setup(self) -> None:
         try:
             self._module = importlib.import_module(self.settings_module)
-        except ImportError as e:
-            raise RestCraftException(
-                f'Could not import settings module "{self.settings_module}".'
-            ) from e
+        except ImportError:
+            raise
 
     def __getattr__(self, name: str) -> t.Any:
         if not hasattr(self._module, name):
-            raise AttributeError('')
+            raise ImproperlyConfigured(f'{name} setting is not set.')
         return getattr(self._module, name)
 
 

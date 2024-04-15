@@ -12,7 +12,10 @@ from email.message import Message
 from urllib.parse import parse_qsl, urljoin
 
 from restcraft.conf import settings
-from restcraft.core.exceptions import HTTPException
+from restcraft.core.exceptions import (
+    MalformedBody,
+    RequestBodyTooLarge,
+)
 from restcraft.utils.helpers import UploadedFile, env_to_h
 
 if t.TYPE_CHECKING:
@@ -83,21 +86,11 @@ class Request:
             return None
 
         content_length = self.content_length
-        try:
-            max_body_size = settings.MAX_BODY_SIZE
-        except AttributeError as e:
-            raise HTTPException(
-                'Missing MAX_BODY_SIZE in settings.',
-                status_code=500,
-                code='MISSING_MAX_BODY_SIZE',
-            ) from e
+
+        max_body_size = settings.MAX_BODY_SIZE
 
         if content_length > max_body_size:
-            raise HTTPException(
-                'Request body too large.',
-                status_code=413,
-                code='REQUEST_BODY_TOO_LARGE',
-            )
+            raise RequestBodyTooLarge()
 
         input_stream = self.env['wsgi.input']
         readbytes = 0
@@ -111,11 +104,7 @@ class Request:
             yield chunk
             readbytes += len(chunk)
             if readbytes > max_body_size:
-                raise HTTPException(
-                    'Request body too large.',
-                    status_code=413,
-                    code='REQUEST_BODY_TOO_LARGE',
-                )
+                raise RequestBodyTooLarge()
 
     def _parse_url_encoded_form(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
@@ -140,11 +129,7 @@ class Request:
         try:
             self._form = dict(parse_qsl(body.decode()))
         except Exception as e:
-            raise HTTPException(
-                'Invalid request body.',
-                status_code=400,
-                code='INVALID_REQUEST_BODY',
-            ) from e
+            raise MalformedBody() from e
 
         if self._form:
             return self._form
@@ -278,11 +263,7 @@ class Request:
         try:
             self._form = json.loads(body.decode())
         except Exception as e:
-            raise HTTPException(
-                'Malformed JSON body.',
-                status_code=400,
-                code='INVALID_REQUEST_BODY',
-            ) from e
+            raise MalformedBody() from e
 
         if self._form:
             return self._form

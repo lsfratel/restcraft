@@ -7,7 +7,7 @@ import typing as t
 from types import ModuleType
 
 from restcraft.conf import settings
-from restcraft.core.exceptions import HTTPException, RestCraftException
+from restcraft.core.exceptions import RestCraftException, RouteNotFound
 from restcraft.core.middleware import Middleware
 from restcraft.core.request import Request
 from restcraft.core.response import JSONResponse, Response
@@ -219,7 +219,7 @@ class RestCraft:
                 the path.
 
         Raises:
-            `HTTPException:` If no matching route is found.
+            `RouteNotFound:` If no matching route is found.
         """
         methods = [method]
 
@@ -235,9 +235,7 @@ class RestCraft:
                 if match := view.route.match(path):
                     return view, match.groupdict()
 
-        raise HTTPException(
-            'Route not found.', status_code=404, code='ROUTE_NOT_FOUND'
-        )
+        raise RouteNotFound('Route not found.')
 
     def __call__(
         self, env: t.Dict, start_response: t.Callable
@@ -383,9 +381,17 @@ class RestCraft:
             have performed any necessary post-processing or cleanup tasks.
             """
             return out.get_response()
-        except HTTPException as e:
+        except RestCraftException as e:
+            if settings.DEBUG:
+                e.payload = {
+                    'details': {
+                        'exception': e.message,
+                        'stacktrace': traceback.format_exc().splitlines(),
+                    }
+                }
+
             out = JSONResponse(
-                e.get_response(), status_code=e.status_code, headers=e.headers
+                e.to_response(), status_code=e.status_code, headers=e.headers
             )
             return out.get_response()
         except Exception as e:
@@ -421,7 +427,7 @@ class RestCraft:
             }
 
             if settings.DEBUG:
-                exc_body['error'] = {
+                exc_body['details'] = {
                     'exception': str(e),
                     'stacktrace': stacktrace.splitlines(),
                 }

@@ -1,82 +1,169 @@
 import typing as t
 
-__all__ = ('HTTPException', 'RestCraftException')
+__all__ = ('HTTPException',)
 
 
 class RestCraftException(Exception):
     """Base exception class for errors."""
 
-
-class HTTPException(RestCraftException):
-    """
-    Represents an HTTP exception that can be raised by the application.
-
-    The `HTTPException` class is a custom exception that can be raised when an
-    HTTP-related error occurs in the application. It provides a standardized
-    way to handle and report these errors, including the ability to specify the
-    HTTP status code, error message, headers, and an optional underlying error
-    object.
-
-    The `get_response()` method returns a dictionary representation of the
-    error response that can be used to generate the appropriate HTTP response.
-    """
-
-    __slots__ = ('message', 'status_code', 'headers', 'code', 'error')
-
-    default_code: t.Union[int, str] = 'HTTP_EXCEPTION'
     default_status_code: int = 500
+    default_message: str = 'Internal server error.'
+    default_exception_code: str = 'INTERNAL_SERVER_ERROR'
 
     def __init__(
         self,
-        message: str,
-        *,
+        message: t.Optional[str] = None,
+        payload: t.Optional[t.Any] = None,
         status_code: t.Optional[int] = None,
-        headers: t.Dict = {},
-        error: t.Optional[t.Any] = None,
-        code: t.Optional[t.Union[int, str]] = None,
+        exception_code: t.Optional[str] = None,
+        headers: t.Optional[t.Dict[str, str]] = None,
     ) -> None:
-        """
-        Initialize a new instance of the Exception class.
-
-        Args:
-            `message (str):` The error message.
-            `status_code (int, optional):` The HTTP status code associated with
-                the exception. Defaults to None.
-            `headers (dict, optional):` Additional headers to be included in
-                the response. Defaults to {}.
-            `error (Any, optional):` The underlying error object. Defaults to
-                None.
-            `code (Union[int, str], optional):` A custom error code. Defaults
-                to None.
-        """
-        super().__init__(message)
-        self.message = message
-        self.headers = headers
+        self.payload = payload
+        self.message = message or self.default_message
         self.status_code = status_code or self.default_status_code
-        self.code = code or self.default_code
-        self.error = error
+        self.exception_code = exception_code or self.default_exception_code
+        self.headers = headers
+        super().__init__(message or self.default_message)
 
-    def get_response(self) -> t.Dict[str, t.Any]:
-        """Returns the error response body.
-
-        Returns:
-            `dict:` The error response body.
+    def to_response(self) -> t.Dict[str, t.Any]:
         """
-        body = {'code': self.code, 'message': self.message}
-
-        if self.error:
-            body['error'] = self.error
-
-        return body
+        Returns a dictionary representation of the error response that can be
+        used to generate the appropriate HTTP response.
+        """
+        return {
+            'code': self.exception_code,
+            'message': self.message,
+            **(self.payload or {}),
+        }
 
     def __repr__(self) -> str:
-        """
-        Returns a string representation of the HTTPException object.
+        return f'<{self.__class__.__name__} {self.status_code} {self.message}>'
 
-        The string representation includes the HTTP status code and the
-        error message.
 
-        Returns:
-            `str:` A string representation of the HTTPException object.
-        """
-        return f'<HTTPException {self.code!r} {self.message!r}>'
+class HTTPException(RestCraftException):
+    """
+    An exception class for HTTP-related errors.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent various HTTP-related errors that may occur
+    during the execution of the application.
+    """
+
+    default_status_code: int = 400
+    default_message: str = 'An unknown error has occurred.'
+    default_exception_code: str = 'HTTP_EXCEPTION'
+
+
+class MalformedBody(RestCraftException):
+    """
+    An exception class for when the request body is malformed.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when the request body is not
+    in the expected format.
+    """
+
+    default_status_code: int = 400
+    default_message: str = 'Malformed body.'
+    default_exception_code: str = 'MALFORMED_BODY'
+
+
+class ImproperlyConfigured(RestCraftException):
+    """
+    An exception class for when the application is improperly configured.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when the application is not
+    properly configured, such as missing required configuration values.
+    """
+
+    default_status_code: int = 500
+    default_message: str = 'Improperly configured.'
+    default_exception_code: str = 'IMPROPERLY_CONFIGURED'
+
+
+class RequestBodyTooLarge(RestCraftException):
+    """
+    An exception class for when the request body is too large.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when the request body exceeds
+    the maximum allowed size.
+    """
+
+    default_status_code: int = 413
+    default_message: str = 'Request body too large.'
+    default_exception_code: str = 'BODY_TOO_LARGE'
+
+
+class InvalidStatusCode(RestCraftException):
+    """
+    An exception class for when an invalid status code is used.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when an invalid HTTP status
+    code is used, such as a code that is out of the valid range or not
+    supported by the application.
+    """
+
+    default_status_code: int = 500
+    default_message: str = 'Invalid status code.'
+    default_exception_code: str = 'INVALID_STATUS_CODE'
+
+
+class FileNotFound(RestCraftException):
+    """
+    An exception class for when a file is not found.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when a requested file is not
+    found on the server.
+    """
+
+    default_status_code: int = 404
+    default_message: str = 'File not found.'
+    default_exception_code: str = 'FILE_NOT_FOUND'
+
+
+class UnsupportedBodyType(RestCraftException):
+    """
+    An exception class for when the request body has an unsupported type.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when the request body is of a
+    type that is not supported by the application.
+    """
+
+    default_status_code: int = 500
+    default_message: str = 'Unsupported body type.'
+    default_exception_code: str = 'UNSUPPORTED_BODY_TYPE'
+
+
+class RouteNotFound(RestCraftException):
+    """
+    An exception class for when a requested route is not found.
+
+    This exception class inherits from the base `RestCraftException` class and
+    provides default values for the status code, message, and exception code.
+
+    It can be used to represent errors that occur when a client requests a
+    route that is not defined or implemented in the application.
+    """
+
+    default_status_code: int = 404
+    default_message: str = 'Route not found.'
+    default_exception_code: str = 'ROUTE_NOT_FOUND'

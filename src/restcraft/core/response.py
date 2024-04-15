@@ -4,7 +4,11 @@ import typing as t
 from http import client as httplib
 from urllib.parse import quote
 
-from restcraft.core.exceptions import RestCraftException
+from restcraft.core.exceptions import (
+    FileNotFound,
+    InvalidStatusCode,
+    UnsupportedBodyType,
+)
 from restcraft.utils.helpers import pep3333
 
 _HTTP_CODES = httplib.responses.copy()
@@ -38,7 +42,6 @@ class Response:
     - `_body`: The response body data.
     - `_status`: The HTTP status code for the response.
     - `_headers`: The HTTP headers for the response.
-    - `_encoded_data`: The encoded version of the response body data.
 
     The class also has the following methods:
     - `header_list`: Returns a list of headers in the response, with certain
@@ -75,7 +78,7 @@ class Response:
         body: t.Any = None,
         *,
         status_code=200,
-        headers: t.Dict[str, t.Any] = {},
+        headers: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> None:
         """
         Initializes a new instance of the `Response` class with the given body,
@@ -92,15 +95,13 @@ class Response:
             `_body (Any):` The response body data.
             `_status (int):` The HTTP status code for the response.
             `_headers (dict[str, Any]):` The HTTP headers for the response.
-            `_encoded_data (bytes):` The encoded version of the response body
-                data.
-            `encode (callable):` A reference to the `json.dumps` function.
         """
         self._body = body
         self._status = status_code
         self._headers = self.default_headers.copy()
-        for k, v in headers.items():
-            self._headers[k.lower()] = v
+        if headers:
+            for k, v in headers.items():
+                self._headers[k.lower()] = v
 
     @property
     def header_list(self) -> t.List[t.Tuple[str, str]]:
@@ -166,7 +167,7 @@ class Response:
                 status code.
         """
         if status not in _HTTP_CODES:
-            raise RestCraftException('Invalid status code.')
+            raise InvalidStatusCode()
         self._status = status
 
     @property
@@ -386,7 +387,7 @@ class FileResponse(Response):
                 file = os.path.join(os.getcwd(), file)
 
             if not os.path.isfile(file):
-                raise ValueError(f'File path {file} does not exist.')
+                raise FileNotFound(f'File path {file} does not exist.')
 
         self._body = file
 
@@ -422,7 +423,7 @@ class FileResponse(Response):
         elif callable(self._body):
             return self._body()
         else:
-            raise TypeError('Unsupported file type.')
+            raise UnsupportedBodyType('Unsupported body type.')
 
     def _encode_from_path(self, path) -> t.Generator[bytes, None, None]:
         """
