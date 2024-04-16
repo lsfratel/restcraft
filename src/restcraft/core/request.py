@@ -440,7 +440,7 @@ class Request:
         return self.env.get('PATH_INFO', '/')
 
     @property
-    def query(self) -> t.Optional[t.Dict[str, t.List[t.Any]]]:
+    def query(self) -> t.Dict[str, str]:
         """
         Constructs and returns a dictionary of query parameters from the
         request's query string.
@@ -451,7 +451,7 @@ class Request:
         """
         qs = self.env.get('QUERY_STRING')
         if qs is None:
-            return
+            return {}
         return dict(parse_qsl(qs))
 
     @property
