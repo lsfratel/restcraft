@@ -380,7 +380,7 @@ class RestCraft:
                         'Route handler must return a Response object.'
                     )
                 view.after_handler(req, out)
-            except RestCraftException as e:
+            except Exception as e:
                 out = view.on_exception(req, e)
                 if not isinstance(out, Response):
                     raise RestCraftException(
