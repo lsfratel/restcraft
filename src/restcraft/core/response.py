@@ -1,5 +1,6 @@
 import json
 import os
+import types
 import typing as t
 from http import client as httplib
 from urllib.parse import quote
@@ -353,8 +354,8 @@ class FileResponse(Response):
             return self._encode_from_path(self._body)
         elif isinstance(self._body, bytes):
             return self._body
-        elif callable(self._body):
-            return self._body()
+        elif isinstance(self._body, types.GeneratorType):
+            return self._body
         else:
             raise UnsupportedBodyType('Unsupported body type.')
 
