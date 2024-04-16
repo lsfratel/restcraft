@@ -49,7 +49,7 @@ RestCraft is divided into two main parts:
 ### Project Example
 
 Explore a sample project using RestCraft to see how everything comes together:
-[https://github.com/lsfratel/restcraft/tree/main/tests/test_app](https://github.com/lsfratel/restcraft/tree/main/tests/test_app)
+[Manganato API](https://github.com/lsfratel/manganatoapi)
 
 ## In Development
 
