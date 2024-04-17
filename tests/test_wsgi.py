@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from restcraft.core.response import _HTTP_STATUS_LINES
+from restcraft.core.routing.response import _HTTP_STATUS_LINES
 from test_app.wsgi import application
 from webtest import TestApp
 

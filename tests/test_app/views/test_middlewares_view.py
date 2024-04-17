@@ -2,7 +2,7 @@ from restcraft.core import JSONResponse, Request, View
 
 
 class TestMiddlewareBeforeRouteEarlyReturn(View):
-    route = r'^/before-route-early$'
+    route = '/before-route-early'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:
@@ -10,7 +10,7 @@ class TestMiddlewareBeforeRouteEarlyReturn(View):
 
 
 class TestMiddlewareBeforeHandlerEarlyReturn(View):
-    route = r'^/before-handler-early$'
+    route = '/before-handler-early'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:
@@ -18,7 +18,7 @@ class TestMiddlewareBeforeHandlerEarlyReturn(View):
 
 
 class TestMiddlewareAfterHandler(View):
-    route = r'^/after-handler$'
+    route = '/after-handler'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:

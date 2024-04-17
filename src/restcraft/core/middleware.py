@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from restcraft.core.request import Request
-from restcraft.core.response import Response
-
 if t.TYPE_CHECKING:
     from restcraft.core.application import RestCraft
+    from restcraft.core.routing.request import Request
+    from restcraft.core.routing.response import Response
 
 
 class Middleware:

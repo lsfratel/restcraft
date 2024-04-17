@@ -4,11 +4,11 @@ import typing as t
 
 from restcraft.conf import settings
 from restcraft.core.middleware import Middleware
-from restcraft.core.request import Request
-from restcraft.core.response import Response
 
 if t.TYPE_CHECKING:
     from restcraft.core.application import RestCraft
+    from restcraft.core.routing.request import Request
+    from restcraft.core.routing.response import Response
 
 
 class CORSMiddleware(Middleware):

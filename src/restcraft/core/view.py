@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import typing as t
 
-from restcraft.core.request import Request
-from restcraft.core.response import Response
-
 if t.TYPE_CHECKING:
     from restcraft.core.application import RestCraft
+    from restcraft.core.routing.request import Request
+    from restcraft.core.routing.response import Response
 
 
 __all__ = ('View',)
@@ -17,7 +16,8 @@ class View:
     Represents a view in the RestCraft framework.
 
     Attributes:
-        route (Union[str, Pattern[str]]): The route associated with the view.
+        name (str): The name of the view.
+        route (str): The route associated with the view.
         methods (List[str]): The HTTP methods supported by the view.
         app (RestCraft): The RestCraft application instance.
 
@@ -33,9 +33,10 @@ class View:
             exceptions raised during request handling.
     """
 
-    __slots__ = ('route', 'methods', 'app')
+    __slots__ = ('route', 'methods', 'app', 'name')
 
-    route: t.Union[str, t.Pattern[str]]
+    name: str
+    route: str
     methods: t.List[str]
 
     def __init__(self, app: RestCraft) -> None:

@@ -53,7 +53,8 @@ select = [
 ignore = [
   "B006",
   "B010",
-  "B009"
+  "B009",
+  "B019"
 ]
 
 [tool.ruff.lint.mccabe]
@@ -62,3 +63,5 @@ max-complexity = 15
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = 79

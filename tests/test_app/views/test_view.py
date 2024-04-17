@@ -5,11 +5,12 @@ from restcraft.core import (
     Request,
     View,
 )
-from restcraft.core.response import FileResponse
+from restcraft.core.routing.response import FileResponse, Response
+from restcraft.core.routing.utils import url_for
 
 
 class TestHandlerReturnView(View):
-    route = r'^/test-handler-return$'
+    route = '/test-handler-return'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:
@@ -17,7 +18,7 @@ class TestHandlerReturnView(View):
 
 
 class TestRaiseHTTPErrorView(View):
-    route = r'^/raise-http-error$'
+    route = '/raise-http-error'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:
@@ -25,7 +26,7 @@ class TestRaiseHTTPErrorView(View):
 
 
 class TestMaxBodyView(View):
-    route = r'^/test-max-body$'
+    route = '/test-max-body'
     methods = ['POST', 'PUT', 'PATCH']
 
     def handler(self, req: Request) -> JSONResponse:
@@ -33,7 +34,7 @@ class TestMaxBodyView(View):
 
 
 class TestRedirectResponseView(View):
-    route = r'^/test-redirect-response$'
+    route = '/test-redirect-response'
     methods = ['GET']
 
     def handler(self, req: Request) -> RedirectResponse:
@@ -41,7 +42,7 @@ class TestRedirectResponseView(View):
 
 
 class TestRedirectResponseTargetView(View):
-    route = r'^/test-redirect-response-target$'
+    route = '/test-redirect-response-target'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:
@@ -49,8 +50,18 @@ class TestRedirectResponseTargetView(View):
 
 
 class TestFileDownloadView(View):
-    route = r'^/test-file-download$'
+    route = '/test-file-download'
     methods = ['GET']
 
     def handler(self, req: Request) -> FileResponse:
         return FileResponse('src/restcraft/wsgi.py', filename='wsgi.py')
+
+
+class TestRouteParamsView(View):
+    route = '/test-route-params/<?age:str>'
+    name = 'test-route-params'
+    methods = ['GET']
+
+    def handler(self, req: Request) -> Response:
+        print(url_for('test-route-params', age='123'))
+        return JSONResponse(body=req.params)

@@ -1,16 +1,16 @@
 import importlib
 import inspect
 import os
-import re
 import traceback
 import typing as t
 from types import ModuleType
 
 from restcraft.conf import settings
-from restcraft.core.exceptions import RestCraftException, RouteNotFound
+from restcraft.core.exceptions import RestCraftException
 from restcraft.core.middleware import Middleware
-from restcraft.core.request import Request
-from restcraft.core.response import JSONResponse, Response
+from restcraft.core.routing.request import Request
+from restcraft.core.routing.response import JSONResponse, Response
+from restcraft.core.routing.router import Router
 from restcraft.core.view import View
 from restcraft.utils.helpers import ThreadSafeContext
 
@@ -44,7 +44,7 @@ class RestCraft:
     executing any registered middleware and the matched view's handler.
     """
 
-    __slots__ = ('ctx', '_routes', '_middlewares')
+    __slots__ = ('_router', '_middlewares', 'ctx')
 
     def __init__(self) -> None:
         """
@@ -55,16 +55,15 @@ class RestCraft:
         The `self.ctx` attribute is a `ThreadSafeContext` object that provides
         a thread-safe context for the application.
 
-        The `self._routes` attribute is a dictionary that maps route paths to
-        lists of `View` objects, representing the registered routes and their
-        corresponding views.
+        The `self._router` attribute is a `Router` object, representing the
+        registered routes for the application.
 
         The `self._middlewares` attribute is a list of `Middleware` objects,
         representing the registered middleware for the application.
         """
         self.ctx = ThreadSafeContext()
 
-        self._routes: t.Dict[str, t.List[View]] = {}
+        self._router = Router()
 
         self._middlewares: t.List[Middleware] = []
 
@@ -90,14 +89,9 @@ class RestCraft:
         supports. If a list of routes for a particular HTTP method does not
         yet exist, it is created.
         """
-        if not isinstance(view.route, str):
-            view.route = re.compile(view.route)
-
         for method in view.methods:
             method = method.upper()
-            if method not in self._routes:
-                self._routes[method] = []
-            self._routes[method].append(view)
+            self._router.add_route(view)
 
     def _import_module(self, path: str) -> t.Union[ModuleType, t.Any]:
         """
@@ -201,40 +195,6 @@ class RestCraft:
         """
         self._middlewares.append(middleware)
 
-    def match(
-        self, path: str, method: str
-    ) -> t.Tuple[View, t.Dict[str, str | t.Any]]:
-        """
-        Matches the given path and method to a route in the application.
-
-        Args:
-            path (str): The path to match against the routes.
-            method (str): The HTTP method to match against the routes.
-
-        Returns:
-            tuple[Route, dict[str, str | t.Any]]: A tuple containing the
-                matched route and a dictionary of captured parameters from
-                the path.
-
-        Raises:
-            RouteNotFound: If no matching route is found.
-        """
-        methods = [method]
-
-        if method == 'HEAD':
-            methods.append('GET')
-
-        for method in methods:
-            routes = self._routes.get(method) or []
-            for view in routes:
-                if isinstance(view.route, str):
-                    view.route = re.compile(view.route)
-
-                if match := view.route.match(path):
-                    return view, match.groupdict()
-
-        raise RouteNotFound('Route not found.')
-
     def __call__(
         self, env: t.Dict, start_response: t.Callable
     ) -> t.Iterable[bytes]:
@@ -329,9 +289,9 @@ class RestCraft:
             Match the incoming request path and HTTP method to a registered
             route.
             """
-            view, params = self.match(req.path, req.method)
+            route, params = self._router.resolve(req.method, req.path)
 
-            self.ctx.view = view
+            self.ctx.view = route.view
 
             req.set_params = params
 
@@ -371,17 +331,17 @@ class RestCraft:
             Returns the response from the handler or on_exception method.
             """
             try:
-                early = view.before_handler(req)
+                early = route.view.before_handler(req)
                 if isinstance(early, Response):
                     return early.get_response()
-                out = view.handler(req)
+                out = route.view.handler(req)
                 if not isinstance(out, Response):
                     raise RestCraftException(
                         'Route handler must return a Response object.'
                     )
-                view.after_handler(req, out)
+                route.view.after_handler(req, out)
             except Exception as e:
-                out = view.on_exception(req, e)
+                out = route.view.on_exception(req, e)
                 if not isinstance(out, Response):
                     raise RestCraftException(
                         'Route exception must return Response object.'

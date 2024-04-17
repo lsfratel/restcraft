@@ -6,7 +6,7 @@ from restcraft.core import (
 
 
 class TestMultipartFormOnlyView(View):
-    route = r'^/test-multipart-form-only$'
+    route = '/test-multipart-form-only'
     methods = ['POST']
 
     def handler(self, req: Request) -> JSONResponse:
