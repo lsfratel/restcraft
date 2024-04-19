@@ -1,8 +1,8 @@
 import unittest
 
 from restcraft.core.exceptions import RouteNotFound
-from restcraft.core.routing.router import Router
-from restcraft.core.view import View
+from restcraft.core.routing.manager import RouteManager
+from restcraft.core.routing.view import View
 
 
 class GenericView(View):
@@ -34,7 +34,7 @@ class TestRouter(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.router = Router()
+        cls.router = RouteManager()
         for route in cls.routes:
             for name, route_str in route.items():
                 route_str, methods = route_str.split('|')

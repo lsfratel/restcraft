@@ -1,6 +1,7 @@
 import unittest
 
-from restcraft.core.routing.response import _HTTP_STATUS_LINES, JSONResponse
+from restcraft.core import JSONResponse
+from restcraft.core.routing.response import _HTTP_STATUS_LINES
 
 
 class TestResponse(unittest.TestCase):

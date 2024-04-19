@@ -1,7 +1,7 @@
 import re
 
 from restcraft.core import JSONResponse, Request
-from restcraft.core.middleware import Middleware
+from restcraft.core.middleware.middleware import Middleware
 
 
 class TestMiddleware(Middleware):

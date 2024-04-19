@@ -11,12 +11,9 @@ import typing as t
 from email.message import Message
 from urllib.parse import parse_qsl, urljoin
 
-from restcraft.conf import settings
-from restcraft.core.exceptions import (
-    MalformedBody,
-    RequestBodyTooLarge,
-)
-from restcraft.utils.helpers import UploadedFile, env_to_h
+from ...conf import settings
+from ...core.exceptions import MalformedBody, RequestBodyTooLarge
+from ...utils.helpers import UploadedFile, env_to_h
 
 if t.TYPE_CHECKING:
     from restcraft.core.application import RestCraft

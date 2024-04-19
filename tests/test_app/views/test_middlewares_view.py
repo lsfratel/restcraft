@@ -1,4 +1,11 @@
-from restcraft.core import JSONResponse, Request, View
+from __future__ import annotations
+
+import typing as t
+
+from restcraft.core import JSONResponse, View
+
+if t.TYPE_CHECKING:
+    from restcraft.core import Request
 
 
 class TestMiddlewareBeforeRouteEarlyReturn(View):

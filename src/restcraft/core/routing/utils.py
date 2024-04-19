@@ -1,6 +1,6 @@
 import re
 
-from restcraft.core.routing.router import router
+from .manager import route_manager
 
 
 def url_for(view_name: str, **kwargs) -> str:
@@ -19,7 +19,7 @@ def url_for(view_name: str, **kwargs) -> str:
     Raises:
         ValueError: If a required parameter is missing or has an invalid value.
     """
-    pattern = router._view_name_mapping[view_name]
+    pattern = route_manager._view_name_mapping[view_name]
     segments = pattern.split('/')
     url_parts = []
 
@@ -41,13 +41,13 @@ def url_for(view_name: str, **kwargs) -> str:
                 else:
                     raise ValueError(f'Parameter {param_name} is required.')
             else:
-                if param_type not in router._route_type_mapping:
+                if param_type not in route_manager._route_type_mapping:
                     raise ValueError(f'Invalid type {param_type}.')
-                elif not router._route_type_mapping[param_type].validate(
-                    param_value
-                ):
+                elif not route_manager._route_type_mapping[
+                    param_type
+                ].validate(param_value):
                     raise ValueError(f'Invalid value for {param_name}.')
-                converted_value = router._route_type_mapping[
+                converted_value = route_manager._route_type_mapping[
                     param_type
                 ].convert(param_value)
                 segment = segment.replace(part, converted_value)

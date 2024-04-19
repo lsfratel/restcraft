@@ -5,12 +5,12 @@ import typing as t
 from http import client as httplib
 from urllib.parse import quote
 
-from restcraft.core.exceptions import (
+from ...core.exceptions import (
     FileNotFound,
     InvalidStatusCode,
     UnsupportedBodyType,
 )
-from restcraft.utils.helpers import pep3333
+from ...utils.helpers import pep3333
 
 _HTTP_CODES = httplib.responses.copy()
 _HTTP_CODES[418] = "I'm a teapot"

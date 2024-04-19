@@ -1,12 +1,18 @@
+from __future__ import annotations
+
+import typing as t
+
 from restcraft.core import (
+    FileResponse,
     HTTPException,
     JSONResponse,
     RedirectResponse,
-    Request,
     View,
 )
-from restcraft.core.routing.response import FileResponse, Response
 from restcraft.core.routing.utils import url_for
+
+if t.TYPE_CHECKING:
+    from restcraft.core import Request
 
 
 class TestHandlerReturnView(View):
@@ -62,6 +68,6 @@ class TestRouteParamsView(View):
     name = 'test-route-params'
     methods = ['GET']
 
-    def handler(self, req: Request) -> Response:
+    def handler(self, req: Request) -> JSONResponse:
         print(url_for('test-route-params', age='123'))
         return JSONResponse(body=req.params)

@@ -5,14 +5,15 @@ import traceback
 import typing as t
 from types import ModuleType
 
-from restcraft.conf import settings
-from restcraft.core.exceptions import RestCraftException
-from restcraft.core.middleware import Middleware
-from restcraft.core.routing.request import Request
-from restcraft.core.routing.response import JSONResponse, Response
-from restcraft.core.routing.router import router
-from restcraft.core.view import View
-from restcraft.utils.helpers import ThreadSafeContext
+from ..conf import settings
+from ..core.exceptions import RestCraftException
+from ..core.middleware.manager import middleware_manager
+from ..core.middleware.middleware import Middleware
+from ..core.routing.manager import route_manager
+from ..core.routing.request import Request
+from ..core.routing.response import JSONResponse, Response
+from ..utils.helpers import ThreadSafeContext
+from .routing.view import View
 
 
 class RestCraft:
@@ -44,7 +45,7 @@ class RestCraft:
     executing any registered middleware and the matched view's handler.
     """
 
-    __slots__ = ('_router', '_middlewares', 'ctx')
+    __slots__ = ('route_manager', 'middleware_manager', 'ctx')
 
     def __init__(self) -> None:
         """
@@ -63,9 +64,9 @@ class RestCraft:
         """
         self.ctx = ThreadSafeContext()
 
-        self._router = router
+        self.route_manager = route_manager
 
-        self._middlewares: t.List[Middleware] = []
+        self.middleware_manager = middleware_manager
 
     def bootstrap(self) -> None:
         """
@@ -91,7 +92,7 @@ class RestCraft:
         """
         for method in view.methods:
             method = method.upper()
-            self._router.add_route(view)
+            self.route_manager.add_route(view)
 
     def _import_module(self, path: str) -> t.Union[ModuleType, t.Any]:
         """
@@ -193,7 +194,7 @@ class RestCraft:
         The middleware will be executed in the order they are added, before and
         after the route handlers.
         """
-        self._middlewares.append(middleware)
+        self.middleware_manager.add_middleware(middleware)
 
     def __call__(
         self, env: t.Dict, start_response: t.Callable
@@ -280,16 +281,15 @@ class RestCraft:
             application's route handlers. This allows middleware to modify or
             reject requests before they are processed further.
             """
-            for middleware in self._middlewares:
-                early = middleware.before_route(req)
-                if isinstance(early, Response):
-                    return early.get_response()
+            resp = self.middleware_manager.before_route(req)
+            if isinstance(resp, Response):
+                return resp.get_response()
 
             """
             Match the incoming request path and HTTP method to a registered
             route.
             """
-            route, params = self._router.resolve(req.method, req.path)
+            route, params = self.route_manager.resolve(req.method, req.path)
 
             self.ctx.view = route.view
 
@@ -308,10 +308,9 @@ class RestCraft:
             application's route handlers. This allows middleware to modify or
             reject requests before they are processed further.
             """
-            for middleware in self._middlewares:
-                early = middleware.before_handler(req)
-                if isinstance(early, Response):
-                    return early.get_response()
+            resp = self.middleware_manager.before_handler(req)
+            if isinstance(resp, Response):
+                return resp.get_response()
 
             """
             Handles the request by calling the appropriate view methods.
@@ -357,8 +356,7 @@ class RestCraft:
             any necessary post-processing or cleanup tasks before the response
             is returned to the client.
             """
-            for middleware in self._middlewares:
-                middleware.after_handler(req, out)
+            self.middleware_manager.after_handler(req, out)
 
             """
             Returns the final response object after all middleware components

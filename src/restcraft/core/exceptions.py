@@ -1,6 +1,9 @@
 import typing as t
 
-__all__ = ('HTTPException',)
+__all__ = (
+    'HTTPException',
+    'RestCraftException',
+)
 
 
 class RestCraftException(Exception):

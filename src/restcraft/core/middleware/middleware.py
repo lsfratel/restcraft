@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing as t
 
 if t.TYPE_CHECKING:
-    from restcraft.core.application import RestCraft
-    from restcraft.core.routing.request import Request
-    from restcraft.core.routing.response import Response
+    from ...core.application import RestCraft
+    from ..routing.request import Request
+    from ..routing.response import Response
 
 
 class Middleware:
@@ -46,7 +46,7 @@ class Middleware:
             Optional[Response]: A response object to short-circuit the request
                 processing, or None to continue processing the request.
         """
-        pass
+        ...
 
     def before_handler(self, req: Request) -> t.Optional[Response]:
         """
@@ -62,7 +62,7 @@ class Middleware:
             Optional[Response]: A response object to short-circuit the request
                 processing, or None to continue processing the request.
         """
-        pass
+        ...
 
     def after_handler(self, req: Request, res: Response) -> None:
         """
@@ -75,7 +75,7 @@ class Middleware:
             req (Request): The request object.
             res (Response): The response object.
         """
-        pass
+        ...
 
     def __repr__(self) -> str:
         """
