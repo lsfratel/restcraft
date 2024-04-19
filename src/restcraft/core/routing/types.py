@@ -1,10 +1,9 @@
 import re
 import typing as t
 import uuid
-from abc import ABC, abstractmethod
 
 
-class ParamType(ABC):
+class ParamType:
     """
     Defines the base class for parameter types used in the routing system.
 
@@ -14,17 +13,17 @@ class ParamType(ABC):
     to handle the specific requirements of the parameter type.
     """
 
-    pattern: str
+    """
+    The pattern must be a capturing group. Otherwise, the route will
+    not match.
+    """
+    pattern: str = r'(.+)'
 
     @classmethod
-    @abstractmethod
-    def validate(cls, value: t.Any) -> bool:
-        pass
+    def validate(cls, value: t.Any) -> bool: ...
 
     @classmethod
-    @abstractmethod
-    def convert(cls, value: t.Any) -> t.Any:
-        pass
+    def convert(cls, value: t.Any) -> t.Any: ...
 
 
 class IntType(ParamType):
@@ -34,15 +33,24 @@ class IntType(ParamType):
     used for validation matches one or more digits.
     """
 
+    """
+    The pattern must be a capturing group. Otherwise, the route will
+    not match.
+    """
     pattern = r'(\d+)'
 
     @classmethod
     def validate(cls, value):
-        return re.match(cls.pattern, value) is not None
+        return bool(re.match(cls.pattern, value))
 
     @classmethod
     def convert(cls, value):
-        return int(value)
+        if cls.validate(value):
+            return int(value)
+
+        raise ValueError(
+            f"Provided value '{value}' is not a valid integer string."
+        )
 
 
 class FloatType(ParamType):
@@ -61,11 +69,16 @@ class FloatType(ParamType):
 
     @classmethod
     def validate(cls, value):
-        return re.match(cls.pattern, value) is not None
+        return bool(re.match(cls.pattern, value))
 
     @classmethod
     def convert(cls, value):
-        return float(value)
+        if cls.validate(value):
+            return float(value)
+
+        raise ValueError(
+            f"Provided value '{value}' is not a valid float string."
+        )
 
 
 class StringType(ParamType):
@@ -83,11 +96,14 @@ class StringType(ParamType):
 
     @classmethod
     def validate(cls, value):
-        return re.match(cls.pattern, value) is not None
+        return bool(re.match(cls.pattern, value))
 
     @classmethod
     def convert(cls, value):
-        return value
+        if cls.validate(value):
+            return str(value)
+
+        raise ValueError(f"Provided value '{value}' is not valid str.")
 
 
 class SlugType(ParamType):
@@ -106,11 +122,18 @@ class SlugType(ParamType):
 
     @classmethod
     def validate(cls, value):
-        return re.match(cls.pattern, value) is not None
+        return bool(re.match(cls.pattern, value))
 
     @classmethod
     def convert(cls, value):
-        return value
+        normalized_slug = re.sub(r'[ _]', '-', value.lower())
+
+        if cls.validate(normalized_slug):
+            return normalized_slug
+
+        raise ValueError(
+            f"Provided value '{value}' cannot be converted to a valid slug."
+        )
 
 
 class UUIDType(ParamType):
@@ -129,12 +152,13 @@ class UUIDType(ParamType):
 
     @classmethod
     def validate(cls, value):
-        try:
-            uuid.UUID(value)
-            return True
-        except ValueError:
-            return False
+        return bool(re.match(cls.pattern, value))
 
     @classmethod
     def convert(cls, value):
-        return uuid.UUID(value)
+        if cls.validate(value):
+            return str(uuid.UUID(value))
+
+        raise ValueError(
+            f"Provided value '{value}' cannot be converted to a valid UUID."
+        )

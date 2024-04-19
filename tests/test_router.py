@@ -1,5 +1,4 @@
 import unittest
-from uuid import UUID
 
 from restcraft.core.exceptions import RouteNotFound
 from restcraft.core.routing.router import Router
@@ -98,7 +97,7 @@ class TestRouter(unittest.TestCase):
         )
         self.assertEqual(getattr(route.view, 'name'), 'product_uuid')
         self.assertEqual(
-            params, {'id': UUID('12345678-1234-5678-1234-567812345678')}
+            params, {'id': '12345678-1234-5678-1234-567812345678'}
         )
 
     def test_router_cart_slug(self):

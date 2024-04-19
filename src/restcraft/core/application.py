@@ -10,7 +10,7 @@ from restcraft.core.exceptions import RestCraftException
 from restcraft.core.middleware import Middleware
 from restcraft.core.routing.request import Request
 from restcraft.core.routing.response import JSONResponse, Response
-from restcraft.core.routing.router import Router
+from restcraft.core.routing.router import router
 from restcraft.core.view import View
 from restcraft.utils.helpers import ThreadSafeContext
 
@@ -63,7 +63,7 @@ class RestCraft:
         """
         self.ctx = ThreadSafeContext()
 
-        self._router = Router()
+        self._router = router
 
         self._middlewares: t.List[Middleware] = []
 

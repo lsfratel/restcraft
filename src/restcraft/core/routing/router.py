@@ -13,17 +13,6 @@ from restcraft.core.routing.types import (
 )
 from restcraft.core.view import View
 
-_type_map: t.Dict[str, ParamType] = {
-    'default': StringType,
-    'int': IntType,
-    'float': FloatType,
-    'str': StringType,
-    'slug': SlugType,
-    'uuid': UUIDType,
-}  # type: ignore
-
-_url_registry: t.Dict[str, str] = {}
-
 
 class Router:
     """
@@ -46,8 +35,17 @@ class Router:
 
     def __init__(self):
         self._routes: t.Dict[str, t.List[Route]] = {}
-        self._type_map = _type_map
-        self._url_registry = _url_registry
+
+        self._view_name_mapping: t.Dict[str, str] = {}
+
+        self._route_type_mapping = {
+            'default': StringType,
+            'int': IntType,
+            'float': FloatType,
+            'str': StringType,
+            'slug': SlugType,
+            'uuid': UUIDType,
+        }
 
     def add_type(self, name: str, type: ParamType, reaplce: bool = False):
         """
@@ -63,10 +61,10 @@ class Router:
             ValueError: If a type with the given name already exists and
                 `replace` is False.
         """
-        if name in self._type_map and not reaplce:
+        if name in self._route_type_mapping and not reaplce:
             raise ValueError(f'Type with name {name} already exists.')
 
-        self._type_map[name] = type
+        self._route_type_mapping[name] = type
 
     def add_route(self, view: View):
         """
@@ -80,15 +78,15 @@ class Router:
         object with this information and adds it to the list of routes for the
         corresponding HTTP method in the `_routes` dictionary.
         """
-        route = Route(view, self._type_map)
+        route = Route(view, self._route_type_mapping)
 
         if hasattr(view, 'name'):
-            if view.name in self._url_registry:
+            if view.name in self._view_name_mapping:
                 raise ValueError(
                     f'A view with the name {view.name} already exists.'
                 )
 
-            self._url_registry[view.name] = view.route
+            self._view_name_mapping[view.name] = view.route
 
         for method in view.methods:
             routes = self._routes.setdefault(method.upper(), [])
@@ -125,3 +123,6 @@ class Router:
             return route, params
 
         raise RouteNotFound('No route matches the given URL.')
+
+
+router = Router()
