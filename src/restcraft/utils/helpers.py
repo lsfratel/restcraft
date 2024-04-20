@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+import typing as t
+
+from .context import context
+
+if t.TYPE_CHECKING:
+    from ..core import Request
+
+
 def pep3333(value: str, errors='strict') -> str:
     """
     Convert the given value to a string using the PEP 3333 encoding rules.
@@ -25,3 +35,7 @@ def env_to_h(v: str) -> str:
         str: The converted string.
     """
     return v.replace('_', '-').lower()
+
+
+def get_request() -> t.Optional[Request]:
+    return getattr(context, 'request', None)

@@ -9,7 +9,6 @@ from restcraft.core import (
     RedirectResponse,
     View,
 )
-from restcraft.core.routing.utils import url_for
 
 if t.TYPE_CHECKING:
     from restcraft.core import Request
@@ -65,9 +64,7 @@ class TestFileDownloadView(View):
 
 class TestRouteParamsView(View):
     route = '/test-route-params/<?age:str>'
-    name = 'test-route-params'
     methods = ['GET']
 
     def handler(self, req: Request) -> JSONResponse:
-        print(url_for('test-route-params', age='123'))
         return JSONResponse(body=req.params)

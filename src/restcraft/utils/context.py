@@ -99,3 +99,6 @@ class ThreadSafeContext:
             self._ctx.ctx = {}
 
         self._ctx.ctx[name] = value
+
+
+context = ThreadSafeContext()
