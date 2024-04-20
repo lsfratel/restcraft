@@ -229,18 +229,19 @@ class RouteManager:
         Raises:
             RouteNotFound: If no route matches the given method and path.
         """
-        method = method.upper()
+        methods = [method.upper()]
 
-        if method not in self._routes:
-            raise RouteNotFound('No route matches the given URL.')
+        if method.upper() == 'HEAD':
+            methods.append('GET')
 
-        for route in self._routes[method]:
-            params = route.match(path)
+        for method in methods:
+            for route in self._routes[method]:
+                params = route.match(path)
 
-            if params is None:
-                continue
+                if params is None:
+                    continue
 
-            return route, params
+                return route, params
 
         raise RouteNotFound('No route matches the given URL.')
 
