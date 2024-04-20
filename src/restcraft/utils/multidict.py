@@ -18,6 +18,7 @@ class MultiDict:
       the dictionary.
     - `remove_value(key: str, value: t.Any)`: Removes a specific value from
       the list of values associated with a key.
+    - `is_empty()`: Returns True if the dictionary is empty, False otherwise.
     - `clear()`: Clears the dictionary.
     """
 
@@ -142,3 +143,6 @@ class MultiDict:
         elif isinstance(other, dict):
             return dict(self._dict) == other
         return False
+
+    def __repr__(self) -> str:
+        return f'<MultiDict {dict(self._dict)}>'
