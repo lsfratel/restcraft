@@ -16,6 +16,11 @@ from .view import View
 
 
 class RouteManager:
+    """
+    The `RouteManager` class is used to manage the routes in the application.
+    It provides methods to add, remove, and get routes from the router.
+    """
+
     def __init__(self):
         self._routes: t.Dict[str, t.List[Route]] = {}
 

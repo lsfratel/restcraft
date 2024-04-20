@@ -1,7 +1,7 @@
 [project]
 name = "restcraft"
 dynamic = ["version"]
-description = "A minimalist Python WSGI framework for quick development of RESTful APIs."
+description = "A minimalist Python WSGI framework for building RESTful APIs."
 authors = [
   {name = "Lucas Santana", email = "lsfratel@gmail.com"},
 ]
@@ -9,6 +9,30 @@ dependencies = []
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
+
+urls = { source = "https://github.com/lsfratel/restcraft" }
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Operating System :: OS Independent",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content :: CGI Tools/Libraries",
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+  "Topic :: Internet :: WWW/HTTP :: WSGI",
+  "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+  "Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware",
+  "Topic :: Internet :: WWW/HTTP :: WSGI :: Server",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Programming Language :: Python :: 3",
+]
+
+keywords = [
+  "wsgi",
+  "framework",
+  "rest",
+  "api",
+]
 
 [build-system]
 requires = ["pdm-backend"]
@@ -34,27 +58,27 @@ test = ["gunicorn", "webtest", "coverage", "snakeviz"]
 [tool.ruff]
 line-length = 79
 
-ignore = [
-  "E501",
-  "B008",
-  "C901",
+select = [
+  "B",
+  "C4",
+  "E",
+  "F",
+  "PGH",
+  "RUF",
+  "W",
+  "YTT",
 ]
 
-select = [
-  "E",
-  "W",
-  "F",
-  "I",
-  "C",
-  "B",
-]
 
 [tool.ruff.lint]
 ignore = [
   "B006",
   "B010",
   "B009",
-  "B019"
+  "B019",
+  "B018",
+  "B019",
+  "RUF012"
 ]
 
 [tool.ruff.lint.mccabe]

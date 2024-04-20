@@ -254,6 +254,8 @@ class RedirectResponse(Response):
 
     """
 
+    default_headers = {}
+
     def __init__(
         self,
         location: str,

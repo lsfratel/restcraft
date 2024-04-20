@@ -204,7 +204,7 @@ class Request:
         if not message.is_multipart():
             return
 
-        for part in message.iter_parts():  # type: ignore
+        for part in message.iter_parts():  # type: ignore  reportAttributeAccessIssue
             if not part.get_filename():
                 continue
 
@@ -244,7 +244,7 @@ class Request:
 
         form = MultiDict()
 
-        for part in message.iter_parts():  # type: ignore
+        for part in message.iter_parts():  # type: ignore  reportAttributeAccessIssue
             if part.get_filename():
                 continue
 

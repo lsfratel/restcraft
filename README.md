@@ -35,21 +35,21 @@ RestCraft is divided into two main parts:
   - **after_handler:** Executed after the handler.
   - **on_exception:** Executed if an exception occurs during the handling of a request.
 - **Route Attributes:**
-  - **route:** Regex pattern for the route.
+  - **route:** The route pattern.
   - **methods:** List of HTTP methods supported by this route (e.g., GET, POST).
 
 ### Routes
 
-- **Regular Expressions:** Uses regular expressions to define routes, offering flexibility and precision in URL pattern matching.
+- **Dynamic Routing:** RestCraft allows you to specify parts of the URL to be dynamic. These dynamic segments can capture parts of the URL as variables, which can then be passed to your request handlers. For example, defining a route like "/user/<username>" can capture any username and pass it to the handler.
+- **Wildcard Filters:** You can use wildcard filters in the routes to capture data with specific formats. For instance, you can define a route to only accept integers int or str, uuid and slug. This lets you tailor the handler functions to specific data types or patterns, improving flexibility and reducing the need for validating URLs within your handlers.
 
 ### Exceptions
 
-- **Easy Custom Exceptions:** Framework supports the definition and handling of custom exceptions, which can be integrated into the application's error handling strategy easily.
+- **Easy Custom Exceptions:** Framework supports of custom exceptions, which can be integrated into the application's error handling strategy easily.
 
 ### Project Example
 
-Explore a sample project using RestCraft to see how everything comes together:
-[Manganato API](https://github.com/lsfratel/manganatoapi)
+Explore a sample project using RestCraft to see how everything comes together: [Manganato API](https://github.com/lsfratel/manganatoapi)
 
 ## In Development
 
