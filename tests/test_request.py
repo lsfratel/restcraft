@@ -53,8 +53,12 @@ class TestRequest(unittest.TestCase):
         self.assertIsInstance(self.req.app, object)
 
     def test_request_json_body(self):
-        body = {'firstname': 'john', 'lastname': 'doe'}
-        self.assertDictEqual(self.req.json, body)  # type: ignore
+        form = self.req.json
+
+        assert form is not None
+
+        self.assertEqual(form.get('firstname'), 'john')
+        self.assertEqual(form.get('lastname'), 'doe')
 
     def test_request_json_body_error(self):
         self.req.env['wsgi.input'] = BytesIO(b'error')
@@ -71,9 +75,19 @@ class TestRequest(unittest.TestCase):
         )
 
     def test_request_form_body(self):
-        self.req.env['wsgi.input'] = BytesIO(b'firstname=john&lastname=doe')
-        body = {'firstname': 'john', 'lastname': 'doe'}
-        self.assertDictEqual(self.req.form, body)  # type: ignore
+        string = 'firstname=john&lastname=doe&lastname=lfs&number=1&arroz=2'
+        self.req.env['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
+        self.req.env['CONTENT_LENGTH'] = str(len(string))
+        self.req.env['wsgi.input'] = BytesIO(string.encode())
+
+        form = self.req.form
+
+        assert form is not None
+
+        self.assertEqual(form.get('firstname'), 'john')
+        self.assertEqual(form.get('lastname', index=0), 'doe')
+        self.assertEqual(form.get('lastname', index=1), 'lfs')
+        self.assertEqual(form.get('number', type=int), 1)
 
     def test_request_header(self):
         headers = {
@@ -102,8 +116,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(self.req.path, '/hello')
 
     def test_request_query(self):
-        query = {'a': '1', 'name': 'lucas'}
-        self.assertDictEqual(self.req.query, query)  # type: ignore
+        qs = self.req.query
+
+        assert qs is not None
+
+        self.assertEqual(qs.get('a'), '1')
+        self.assertEqual(qs.get('name'), 'lucas')
 
     def test_request_host(self):
         host = 'localhost:8080'

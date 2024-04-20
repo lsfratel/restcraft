@@ -12,7 +12,7 @@ from ..core.middleware.middleware import Middleware
 from ..core.routing.manager import route_manager
 from ..core.routing.request import Request
 from ..core.routing.response import JSONResponse, Response
-from ..utils.helpers import ThreadSafeContext
+from ..utils.context import ThreadSafeContext
 from .routing.view import View
 
 

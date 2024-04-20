@@ -9,11 +9,13 @@ import shutil
 import tempfile
 import typing as t
 from email.message import Message
-from urllib.parse import parse_qsl, urljoin
+from urllib.parse import parse_qs, urljoin
 
 from ...conf import settings
 from ...core.exceptions import MalformedBody, RequestBodyTooLarge
-from ...utils.helpers import UploadedFile, env_to_h
+from ...utils.helpers import env_to_h
+from ...utils.multidict import MultiDict
+from ...utils.uploadfile import UploadedFile
 
 if t.TYPE_CHECKING:
     from restcraft.core.application import RestCraft
@@ -85,6 +87,7 @@ class Request:
         '_headers',
         '_files',
         '_form',
+        '_query',
         'env',
         'ctx',
     )
@@ -96,7 +99,8 @@ class Request:
         self._params = params
         self._headers: t.Any = None
         self._files: t.Dict[str, UploadedFile] = {}
-        self._form: t.Dict[str, t.Any] = {}
+        self._form: t.Optional[MultiDict] = None
+        self._query: t.Optional[MultiDict] = None
 
     def _read_body(self) -> t.Generator[bytes, None, None]:
         """
@@ -134,7 +138,7 @@ class Request:
             if readbytes > max_body_size:
                 raise RequestBodyTooLarge()
 
-    def _parse_url_encoded_form(self) -> t.Optional[t.Dict[str, t.Any]]:
+    def _parse_url_encoded_form(self) -> t.Optional[MultiDict]:
         """
         Parses the URL-encoded form data from the request body.
 
@@ -155,12 +159,16 @@ class Request:
             body += chunk
 
         try:
-            self._form = dict(parse_qsl(body.decode()))
+            form = MultiDict(parse_qs(body.decode('utf-8')))
         except Exception as e:
             raise MalformedBody() from e
 
-        if self._form:
-            return self._form
+        if form.is_empty():
+            return None
+
+        self._form = form
+
+        return self._form
 
     def _get_multipart_message(self) -> Message:
         """
@@ -217,7 +225,7 @@ class Request:
 
         return self._files
 
-    def _parse_multipart_form(self) -> t.Optional[t.Dict[str, t.Any]]:
+    def _parse_multipart_form(self) -> t.Optional[MultiDict]:
         """
         Parses the multipart form data from the request body.
 
@@ -234,6 +242,8 @@ class Request:
         if not message.is_multipart():
             return
 
+        form = MultiDict()
+
         for part in message.iter_parts():  # type: ignore
             if part.get_filename():
                 continue
@@ -242,12 +252,16 @@ class Request:
             payload = part.get_payload(decode=True)
             if isinstance(payload, bytes):
                 payload = payload.decode()
-            self._form[name] = payload
+            form.add(name, payload)
 
-        if self._form:
-            return self._form
+        if form.is_empty():
+            return
 
-    def _parse_json_data(self) -> t.Optional[t.Dict[str, t.Any]]:
+        self._form = form
+
+        return self._form
+
+    def _parse_json_data(self) -> t.Optional[MultiDict]:
         """
         Parses the request body as JSON data and returns a dictionary
         containing the parsed data.
@@ -281,12 +295,16 @@ class Request:
             return
 
         try:
-            self._form = json.loads(body.decode())
+            form = MultiDict(json.loads(body.decode()))
         except Exception as e:
             raise MalformedBody() from e
 
-        if self._form:
-            return self._form
+        if form.is_empty():
+            return
+
+        self._form = form
+
+        return self._form
 
     @property
     def app(self) -> RestCraft:
@@ -317,7 +335,7 @@ class Request:
         self._params = params
 
     @property
-    def json(self) -> t.Optional[t.Dict[str, t.Any]]:
+    def json(self) -> t.Optional[MultiDict]:
         """
         Returns the parsed JSON data from the request body, if present.
 
@@ -327,7 +345,7 @@ class Request:
         return self._parse_json_data()
 
     @property
-    def form(self) -> t.Optional[t.Dict[str, str]]:
+    def form(self) -> t.Optional[MultiDict]:
         """
         Returns the form data of the request, if available.
 
@@ -437,7 +455,7 @@ class Request:
         return self.env.get('PATH_INFO', '/')
 
     @property
-    def query(self) -> t.Dict[str, str]:
+    def query(self) -> t.Optional[MultiDict]:
         """
         Constructs and returns a dictionary of query parameters from the
         request's query string.
@@ -446,10 +464,22 @@ class Request:
             Optional[Dict[str, List[Any]]]: A dictionary of query parameters,
                 or `None` if the query string is empty.
         """
+        if self._query:
+            return self._query
+
         qs = self.env.get('QUERY_STRING')
+
         if qs is None:
-            return {}
-        return dict(parse_qsl(qs))
+            return
+
+        qs = MultiDict(parse_qs(qs))
+
+        if qs.is_empty():
+            return
+
+        self._query = qs
+
+        return self._query
 
     @property
     def host(self) -> str:
