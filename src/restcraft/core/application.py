@@ -13,6 +13,7 @@ from ..core.routing.manager import route_manager
 from ..core.routing.request import Request
 from ..core.routing.response import JSONResponse, Response
 from ..utils.context import context
+from .di.container import DependencyManager
 from .routing.view import View
 
 
@@ -45,7 +46,7 @@ class RestCraft:
     executing any registered middleware and the matched view's handler.
     """
 
-    __slots__ = ('route_manager', 'middleware_manager', 'ctx')
+    __slots__ = ('route_manager', 'middleware_manager', 'ctx', 'di')
 
     def __init__(self) -> None:
         """
@@ -64,6 +65,8 @@ class RestCraft:
         """
         self.ctx = context
 
+        self.di = DependencyManager.instance()
+
         self.route_manager = route_manager
 
         self.middleware_manager = middleware_manager
@@ -77,6 +80,10 @@ class RestCraft:
 
         for middleware in settings.MIDDLEWARES:
             self._import_middleware(middleware)
+
+        for scope, dependencies in settings.SERVICES.items():
+            for dependency in dependencies:
+                self._import_di_dependencies(scope, dependency)
 
     def _add_view(self, view: View) -> None:
         """
@@ -180,6 +187,19 @@ class RestCraft:
                 if not issubclass(middleware, Middleware):
                     continue
                 self.add_middleware(middleware(self))
+
+    def _import_di_dependencies(self, scope: str, dependency: t.Any):
+        """
+        Imports and adds a dependency to the application's dependency
+        injection container.
+
+        Args:
+            scope (str): The scope of the dependency.
+            dependency (Any): The dependency to be added.
+        """
+        result = self._import_module(dependency)
+
+        self.di.register(result, scope)
 
     def add_middleware(self, middleware: Middleware) -> None:
         """
@@ -415,3 +435,4 @@ class RestCraft:
             Clears the context associated with the current request.
             """
             self.ctx.clear()
+            self.di.clear_scoped()

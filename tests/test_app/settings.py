@@ -17,8 +17,14 @@ MIDDLEWARES = {
     'test_app.middlewares.test_middleware',
 }
 
+SERVICES = {
+    'transient': [
+        'test_app.services.transient.MyTransientService',
+    ],
+}
+
 
 try:
-    from .local_settings import *  # type: ignore # noqa: F403
+    from .local_settings import *  # type: ignore reportMissingImports  # noqa: F403
 except ImportError:
     pass

@@ -9,6 +9,9 @@ from restcraft.core import (
     RedirectResponse,
     View,
 )
+from restcraft.core.di import inject
+
+from tests.test_app.services.transient import MyTransientService
 
 if t.TYPE_CHECKING:
     from restcraft.core import Request
@@ -68,3 +71,16 @@ class TestRouteParamsView(View):
 
     def handler(self, req: Request) -> JSONResponse:
         return JSONResponse(body=req.params)
+
+
+class TestDIView(View):
+    route = '/test-di'
+    methods = ['GET']
+
+    @inject
+    def handler(
+        self, req: Request, logger: MyTransientService
+    ) -> JSONResponse:
+        return JSONResponse(
+            body={'message': logger.return_msg('heelo from di')}
+        )
