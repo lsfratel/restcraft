@@ -12,7 +12,7 @@ from ..core.middleware.middleware import Middleware
 from ..core.routing.manager import RouteManager
 from ..core.routing.request import Request
 from ..core.routing.response import JSONResponse, Response
-from ..utils.context import context
+from ..utils.context import ThreadSafeContext
 from .di.container import DependencyManager
 from .routing.view import View
 
@@ -63,7 +63,7 @@ class RestCraft:
         The `self._middlewares` attribute is a list of `Middleware` objects,
         representing the registered middleware for the application.
         """
-        self.ctx = context
+        self.ctx = ThreadSafeContext.instance()
 
         self.di = DependencyManager.instance()
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from .context import context
+from .context import ThreadSafeContext
 
 if t.TYPE_CHECKING:
     from ..core import Request
@@ -38,4 +38,4 @@ def env_to_h(v: str) -> str:
 
 
 def get_request() -> t.Optional[Request]:
-    return getattr(context, 'request', None)
+    return getattr(ThreadSafeContext.instance(), 'request', None)

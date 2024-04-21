@@ -8,6 +8,14 @@ class ThreadSafeContext:
     a thread-local context.
     """
 
+    _instance = None
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
     def __init__(self) -> None:
         """
         Initializes a new instance of the ThreadSafeContext class.
@@ -99,6 +107,3 @@ class ThreadSafeContext:
             self._ctx.ctx = {}
 
         self._ctx.ctx[name] = value
-
-
-context = ThreadSafeContext()
