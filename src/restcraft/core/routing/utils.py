@@ -1,6 +1,6 @@
 import re
 
-from .manager import route_manager
+from .manager import RouteManager
 
 
 def url_for(view_name: str, **kwargs) -> str:
@@ -19,6 +19,8 @@ def url_for(view_name: str, **kwargs) -> str:
     Raises:
         ValueError: If a required parameter is missing or has an invalid value.
     """
+    route_manager = RouteManager.instance()
+
     pattern = route_manager._view_name_mapping[view_name]
     segments = pattern.split('/')
     url_parts = []

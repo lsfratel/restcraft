@@ -7,9 +7,9 @@ from types import ModuleType
 
 from ..conf import settings
 from ..core.exceptions import RestCraftException
-from ..core.middleware.manager import middleware_manager
+from ..core.middleware.manager import MiddlewareManager
 from ..core.middleware.middleware import Middleware
-from ..core.routing.manager import route_manager
+from ..core.routing.manager import RouteManager
 from ..core.routing.request import Request
 from ..core.routing.response import JSONResponse, Response
 from ..utils.context import context
@@ -67,9 +67,9 @@ class RestCraft:
 
         self.di = DependencyManager.instance()
 
-        self.route_manager = route_manager
+        self.route_manager = RouteManager.instance()
 
-        self.middleware_manager = middleware_manager
+        self.middleware_manager = MiddlewareManager.instance()
 
     def bootstrap(self) -> None:
         """
@@ -101,7 +101,7 @@ class RestCraft:
             method = method.upper()
             self.route_manager.add_route(view)
 
-    def _import_module(self, path: str) -> t.Union[ModuleType, t.Any]:
+    def _import_module(self, path: str) -> t.Union[ModuleType, t.Type]:
         """
         Import a module given its filename.
 
@@ -159,7 +159,8 @@ class RestCraft:
             if not issubclass(result, View):
                 raise TypeError(f'View {path} must be a subclass of View.')
             self._add_view(result(self))
-        else:
+
+        if inspect.ismodule(result):
             for _, view in self._get_module_members(result):
                 if not issubclass(view, View):
                     continue
@@ -182,13 +183,14 @@ class RestCraft:
                     f'Middleware {path} must be a subclass of Middleware.'
                 )
             self.add_middleware(result(self))
-        else:
+
+        if inspect.ismodule(result):
             for _, middleware in self._get_module_members(result):
                 if not issubclass(middleware, Middleware):
                     continue
                 self.add_middleware(middleware(self))
 
-    def _import_di_dependencies(self, scope: str, dependency: t.Any):
+    def _import_di_dependencies(self, scope: str, dependency: str):
         """
         Imports and adds a dependency to the application's dependency
         injection container.
@@ -199,7 +201,8 @@ class RestCraft:
         """
         result = self._import_module(dependency)
 
-        self.di.register(result, scope)
+        if inspect.isclass(result):
+            self.di.register(result, scope)
 
     def add_middleware(self, middleware: Middleware) -> None:
         """

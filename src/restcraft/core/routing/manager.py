@@ -21,6 +21,14 @@ class RouteManager:
     It provides methods to add, remove, and get routes from the router.
     """
 
+    _instance = None
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = RouteManager()
+        return cls._instance
+
     def __init__(self):
         self._routes: t.Dict[str, t.List[Route]] = {}
 
@@ -249,6 +257,3 @@ class RouteManager:
                 return route, params
 
         raise RouteNotFound('No route matches the given URL.')
-
-
-route_manager = RouteManager()

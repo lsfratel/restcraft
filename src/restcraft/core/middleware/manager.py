@@ -20,6 +20,14 @@ class MiddlewareManager:
     on each middleware component during the request/response lifecycle.
     """
 
+    _instance = None
+
+    @classmethod
+    def instance(cls) -> MiddlewareManager:
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
     def __init__(self) -> None:
         self._middlewares: t.List[Middleware] = []
 
@@ -41,6 +49,3 @@ class MiddlewareManager:
     def after_handler(self, req: Request, res: Response) -> None:
         for middleware in self._middlewares:
             middleware.after_handler(req, res)
-
-
-middleware_manager = MiddlewareManager()
