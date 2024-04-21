@@ -172,6 +172,9 @@ def inject(func: t.Callable) -> t.Callable:
         signature = inspect.signature(func)
 
         for param_name, param in signature.parameters.items():
+            if param.default is not param.empty:
+                continue
+
             annotation = param.annotation
 
             if hasattr(annotation, '__name__'):
