@@ -43,13 +43,25 @@ RestCraft is divided into two main parts:
 - **Dynamic Routing:** RestCraft allows you to specify parts of the URL to be dynamic. These dynamic segments can capture parts of the URL as variables, which can then be passed to your request handlers. For example, defining a route like "/user/<username>" can capture any username and pass it to the handler.
 - **Wildcard Filters:** You can use wildcard filters in the routes to capture data with specific formats. For instance, you can define a route to only accept integers int or str, uuid and slug. This lets you tailor the handler functions to specific data types or patterns, improving flexibility and reducing the need for validating URLs within your handlers.
 
+### Dependency Injection System
+
+Our custom Dependency Injection (DI) system is designed to manage and inject dependencies dynamically, promoting loose coupling and enhanced modularity within the application. The DI system supports various types of dependency lifetimes, ensuring that components can be instantiated and used according to the specific needs of the application. Below are the types of lifetimes supported:
+
+#### Supported Dependency Lifetimes
+
+- **Singleton**: Singleton dependencies are created once and shared throughout the application's lifetime. Once instantiated, the same instance of a singleton dependency is returned every time it is requested. This is useful for services that maintain a consistent state or provide a shared resource across the application.
+
+- **Transient**: Transient dependencies are recreated every time they are requested. This ensures that a new instance is provided to every consumer, guaranteeing that no shared state is carried over from previous uses. Transient dependencies are ideal for stateless services where each operation is expected to be independent.
+
+- **Scoped**: Scoped dependencies are instantiated once per request, a user session, or a specific task. All requests within the same scope share the same instance, while different scopes will have their own separate instances. This is particularly useful for operations where a common context or state needs to be maintained throughout the operation but should not be shared with other operations.
+
 ### Exceptions
 
 - **Easy Custom Exceptions:** Framework supports of custom exceptions, which can be integrated into the application's error handling strategy easily.
 
-### Project Example
+### Project Template
 
-Explore a sample project using RestCraft to see how everything comes together: [Manganato API](https://github.com/lsfratel/manganatoapi)
+[restcraft-template](https://github.com/lsfratel/restcraft-template)
 
 ## In Development
 
