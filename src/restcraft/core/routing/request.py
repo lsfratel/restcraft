@@ -11,6 +11,8 @@ import typing as t
 from email.message import Message
 from urllib.parse import parse_qs, urljoin
 
+from restcraft.utils.attrdict import AttrDict
+
 from ...conf import settings
 from ...core.exceptions import MalformedBody, RequestBodyTooLarge
 from ...utils.helpers import env_to_h
@@ -34,7 +36,7 @@ class Request:
 
     Attributes:
         env (Dict): The WSGI environment dictionary.
-        ctx (Dict[str, Any]): A dictionary for storing custom context data.
+        ctx (AttrDict): Attribute dictionary for storing request-specific data.
 
     Properties:
         app (RestCraft): The RestCraft application associated with the request.
@@ -94,7 +96,7 @@ class Request:
 
     def __init__(self, environ: t.Dict, params: t.Dict = {}) -> None:
         self.env = environ
-        self.ctx: t.Dict[str, t.Any] = {}
+        self.ctx = AttrDict()
 
         self._params = params
         self._headers: t.Any = None
