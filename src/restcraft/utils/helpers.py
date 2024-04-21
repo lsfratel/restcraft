@@ -37,5 +37,11 @@ def env_to_h(v: str) -> str:
     return v.replace('_', '-').lower()
 
 
-def get_request() -> t.Optional[Request]:
-    return getattr(ThreadSafeContext.instance(), 'request', None)
+def get_request() -> Request:
+    """
+    Get the request object from the thread-safe context.
+
+    Returns:
+        Request: The request object.
+    """
+    return ThreadSafeContext.instance().request
