@@ -36,11 +36,11 @@ RestCraft is divided into two main parts:
   - **on_exception:** Executed if an exception occurs during the handling of a request.
 - **Route Attributes:**
   - **route:** The route pattern.
-  - **methods:** List of HTTP methods supported by this route (e.g., GET, POST).
+  - **methods:** List of HTTP methods supported by this view (e.g., GET, POST).
 
 ### Routes
 
-- **Dynamic Routing:** RestCraft allows you to specify parts of the URL to be dynamic. These dynamic segments can capture parts of the URL as variables, which can then be passed to your request handlers. For example, defining a route like "/user/<username>" can capture any username and pass it to the handler.
+- **Dynamic Routing:** RestCraft allows you to specify parts of the URL to be dynamic. These dynamic segments can capture parts of the URL as variables, which can then be passed to your request handlers. For example, defining a route like "/user/\<username\>" can capture any username and pass it to the handler.
 - **Wildcard Filters:** You can use wildcard filters in the routes to capture data with specific formats. For instance, you can define a route to only accept integers int or str, uuid and slug. This lets you tailor the handler functions to specific data types or patterns, improving flexibility and reducing the need for validating URLs within your handlers.
 
 ### Dependency Injection System
