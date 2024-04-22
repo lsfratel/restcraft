@@ -1,6 +1,6 @@
 import unittest
 
-from restcraft.core.exceptions import RouteNotFound
+from restcraft.core.exceptions import HTTPException
 from restcraft.core.routing.manager import RouteManager
 from restcraft.core.routing.view import View
 
@@ -129,5 +129,5 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(params, {'id': 1, 'id2': 2})
 
     def test_router_types(self):
-        with self.assertRaises(RouteNotFound):
+        with self.assertRaises(HTTPException):
             _ = self.router.resolve('GET', '/nested/a')

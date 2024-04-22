@@ -2,7 +2,7 @@ import re
 import typing as t
 from functools import cache
 
-from ..exceptions import RouteNotFound
+from ..exceptions import HTTPException
 from .route import Route
 from .types import (
     FloatType,
@@ -240,7 +240,7 @@ class RouteManager:
                 and a dictionary of the extracted path parameters.
 
         Raises:
-            RouteNotFound: If no route matches the given method and path.
+            HTTPException: If no route matches the given method and path.
         """
         methods = [method.upper()]
 
@@ -256,4 +256,10 @@ class RouteManager:
 
                 return route, params
 
-        raise RouteNotFound('No route matches the given URL.')
+        raise HTTPException(
+            {
+                'code': 'ROUTE_NOT_FOUND',
+                'message': 'The requested route could not be found.',
+            },
+            status_code=404,
+        )

@@ -3,10 +3,7 @@ from io import BytesIO
 
 from restcraft.conf import settings
 from restcraft.core import Request
-from restcraft.core.exceptions import (
-    MalformedBody,
-    RequestBodyTooLarge,
-)
+from restcraft.core.exceptions import HTTPException
 
 
 class Settings:
@@ -62,15 +59,15 @@ class TestRequest(unittest.TestCase):
 
     def test_request_json_body_error(self):
         self.req.env['wsgi.input'] = BytesIO(b'error')
-        with self.assertRaises(MalformedBody) as e:
+        with self.assertRaises(HTTPException) as e:
             _ = self.req.json
         resp = e.exception
         self.assertEqual(resp.status_code, 400)
         self.assertDictEqual(
-            resp.to_response(),
+            resp.body,
             {
                 'code': 'MALFORMED_BODY',
-                'message': 'Malformed body.',
+                'message': 'The request body could not be parsed as JSON.',
             },
         )
 
@@ -154,14 +151,14 @@ class TestRequest(unittest.TestCase):
 
     def test_request_max_body_size(self):
         settings.MAX_BODY_SIZE = 10  # type: ignore
-        with self.assertRaises(RequestBodyTooLarge) as e:
+        with self.assertRaises(HTTPException) as e:
             _ = self.req.json
         resp = e.exception
         self.assertEqual(resp.status_code, 413)
         self.assertDictEqual(
-            resp.to_response(),
+            resp.body,
             {
-                'code': 'BODY_TOO_LARGE',
+                'code': 'REQUEST_BODY_TOO_LARGE',
                 'message': 'Request body too large.',
             },
         )

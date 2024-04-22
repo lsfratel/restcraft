@@ -44,10 +44,10 @@ class TestResponse(unittest.TestCase):
         )
 
     def test_json_response_set_status_error(self):
-        with self.assertRaises(Exception) as e:
+        with self.assertRaises(ValueError) as e:
             self.resp.set_status = 9090
         ex = e.exception
-        self.assertEqual(str(ex), 'Invalid status code.')
+        self.assertEqual(str(ex), 'Invalid status code: 9090.')
 
     def test_json_response_data(self):
         self.assertDictEqual(self.resp.body, self.data)

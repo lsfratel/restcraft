@@ -5,11 +5,7 @@ import typing as t
 from http import client as httplib
 from urllib.parse import quote
 
-from ...core.exceptions import (
-    FileNotFound,
-    InvalidStatusCode,
-    UnsupportedBodyType,
-)
+from ...core.exceptions import HTTPException
 from ...utils.helpers import pep3333
 
 _HTTP_CODES = httplib.responses.copy()
@@ -142,11 +138,11 @@ class Response:
             status (int): The HTTP status code.
 
         Raises:
-            InvalidStatusCode: If the status code is not valid.
+            ValueError: If the status code is not valid.
 
         """
         if status not in _HTTP_CODES:
-            raise InvalidStatusCode()
+            raise ValueError(f'Invalid status code: {status}.')
         self._status = status
 
     @property
@@ -332,7 +328,13 @@ class FileResponse(Response):
                 file = os.path.join(os.getcwd(), file)
 
             if not os.path.isfile(file):
-                raise FileNotFound(f'File path {file} does not exist.')
+                raise HTTPException(
+                    {
+                        'code': 'FILE_NOT_FOUND',
+                        'message': 'The requested file was not found.',
+                    },
+                    status_code=404,
+                )
 
         self._body = file
 
@@ -359,13 +361,13 @@ class FileResponse(Response):
             Union[bytes, Generator[bytes, None, None]]: The response data.
 
         Raises:
-            UnsupportedBodyType: If the file type is unsupported.
+            ValueError: If the file type is unsupported.
         """
         if isinstance(self._body, str):
             return self._generate_file_chunks(self._body)
         elif isinstance(self._body, (bytes, types.GeneratorType)):
             return self._body
-        raise UnsupportedBodyType('Unsupported body type.')
+        raise ValueError('Unsupported file type.')
 
     def _generate_file_chunks(
         self, file_path: str

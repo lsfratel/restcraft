@@ -67,7 +67,6 @@ class TestWSGI(unittest.TestCase):
         resp = self.client.get('/test-handler-return', expect_errors=True)
         self.assertEqual(resp.status_int, 500)
         body = json.loads(resp.body)
-        self.assertEqual(body['code'], 'INTERNAL_SERVER_ERROR')
         self.assertEqual(
             body['message'], 'Route handler must return a Response object.'
         )
@@ -76,7 +75,6 @@ class TestWSGI(unittest.TestCase):
         resp = self.client.get('/raise-http-error', expect_errors=True)
         self.assertEqual(resp.status_int, 422)
         body = json.loads(resp.body)
-        self.assertEqual(body['code'], 'HTTP_EXCEPTION')
         self.assertEqual(body['message'], 'http-error')
 
     def test_wsgi_max_body_size(self):
@@ -89,5 +87,5 @@ class TestWSGI(unittest.TestCase):
         )
         res_body = json.loads(resp.body)
         self.assertEqual(resp.status_int, 413)
-        self.assertEqual(res_body['code'], 'BODY_TOO_LARGE')
+        self.assertEqual(res_body['code'], 'REQUEST_BODY_TOO_LARGE')
         self.assertEqual(res_body['message'], 'Request body too large.')

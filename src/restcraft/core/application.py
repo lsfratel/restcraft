@@ -387,16 +387,28 @@ class RestCraft:
             """
             return out.get_response()
         except RestCraftException as e:
+            body = e.body
+
             if settings.DEBUG:
-                e.payload = {
-                    'details': {
-                        'exception': e.message,
-                        'stacktrace': traceback.format_exc().splitlines(),
-                    }
+                details = {
+                    'stacktrace': traceback.format_exc().splitlines(),
                 }
 
+                if isinstance(body, str):
+                    body = {
+                        'message': body,
+                        'details': details,
+                    }
+                elif isinstance(body, list):
+                    body = {
+                        'errors': body,
+                        'details': details,
+                    }
+                else:
+                    body['details'] = details
+
             out = JSONResponse(
-                e.to_response(), status_code=e.status_code, headers=e.headers
+                body, status_code=e.status_code, headers=e.headers
             )
             return out.get_response()
         except Exception as e:

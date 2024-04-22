@@ -3,8 +3,6 @@ import os
 import typing as t
 from types import ModuleType
 
-from restcraft.core.exceptions import ImproperlyConfigured
-
 
 class LazySettings:
     """
@@ -54,11 +52,11 @@ class LazySettings:
             Any: The value of the attribute.
 
         Raises:
-            ImproperlyConfigured: If the attribute is not set in the settings
+            ValueError: If the attribute is not set in the settings
                 module.
         """
         if not hasattr(self._module, name):
-            raise ImproperlyConfigured(f'{name} setting is not set.')
+            raise ValueError(f'{name} not set in settings module.')
         return getattr(self._module, name)
 
 

@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urljoin
 from restcraft.utils.attrdict import AttrDict
 
 from ...conf import settings
-from ...core.exceptions import MalformedBody, RequestBodyTooLarge
+from ...core.exceptions import HTTPException
 from ...utils.helpers import env_to_h
 from ...utils.multidict import MultiDict
 from ...utils.uploadfile import UploadedFile
@@ -113,7 +113,7 @@ class Request:
             bytes: The next chunk of the request body.
 
         Raises:
-            RequestBodyTooLarge: If the total size of the request body exceeds
+            HTTPException: If the total size of the request body exceeds
                 the maximum allowed body size.
         """
         if self.method not in ('POST', 'PUT', 'PATCH'):
@@ -124,7 +124,13 @@ class Request:
         max_body_size = settings.MAX_BODY_SIZE
 
         if content_length > max_body_size:
-            raise RequestBodyTooLarge()
+            raise HTTPException(
+                {
+                    'code': 'REQUEST_BODY_TOO_LARGE',
+                    'message': 'Request body too large.',
+                },
+                status_code=413,
+            )
 
         input_stream = self.env['wsgi.input']
         readbytes = 0
@@ -138,7 +144,13 @@ class Request:
             yield chunk
             readbytes += len(chunk)
             if readbytes > max_body_size:
-                raise RequestBodyTooLarge()
+                raise HTTPException(
+                    {
+                        'code': 'REQUEST_BODY_TOO_LARGE',
+                        'message': 'Request body too large.',
+                    },
+                    status_code=413,
+                )
 
     def _parse_url_encoded_form(self) -> t.Optional[MultiDict]:
         """
@@ -149,7 +161,7 @@ class Request:
                 is no form data.
 
         Raises:
-            MalformedBody: If the request body cannot be parsed as URL-encoded
+            HTTPException: If the request body cannot be parsed as URL-encoded
                 form data.
         """
         if self._form:
@@ -163,7 +175,16 @@ class Request:
         try:
             form = MultiDict(parse_qs(body.decode('utf-8')))
         except Exception as e:
-            raise MalformedBody() from e
+            raise HTTPException(
+                {
+                    'code': 'MALFORMED_BODY',
+                    'message': (
+                        'The request body could not be parsed as '
+                        'URL-encoded form data.'
+                    ),
+                },
+                status_code=400,
+            ) from e
 
         if form.is_empty():
             return None
@@ -274,7 +295,7 @@ class Request:
         If the request body is empty, this method returns `None`.
 
         If there is an error parsing the JSON data, this method raises a
-        `MalformedBody` exception.
+        `HTTPException` exception.
 
         Returns:
             Optional[Dict[str, Any]]: A dictionary containing the parsed JSON
@@ -299,7 +320,13 @@ class Request:
         try:
             form = MultiDict(json.loads(body.decode()))
         except Exception as e:
-            raise MalformedBody() from e
+            raise HTTPException(
+                {
+                    'code': 'MALFORMED_BODY',
+                    'message': 'The request body could not be parsed as JSON.',
+                },
+                status_code=400,
+            ) from e
 
         if form.is_empty():
             return
