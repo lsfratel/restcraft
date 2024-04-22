@@ -337,14 +337,19 @@ class Request:
         self._params = params
 
     @property
-    def json(self) -> t.Optional[MultiDict]:
+    def json(self) -> t.Optional[t.Dict[str, t.Any]]:
         """
         Returns the parsed JSON data from the request body, if present.
 
         Optional[Dict[str, Any]]: A dictionary containing the parsed JSON data,
             or None if no JSON data is present.
         """
-        return self._parse_json_data()
+        body = self._parse_json_data()
+
+        if not body:
+            return
+
+        return {k: body.get(k) for k in body}
 
     @property
     def form(self) -> t.Optional[MultiDict]:
@@ -355,7 +360,7 @@ class Request:
         using the `_parse_multipart_form()` method. Otherwise, the form data
         is parsed using the `_parse_url_encoded_form()` method.
 
-        Optional[Dict[str, str]]: A dictionary containing the form data, or
+        Optional[MultiDict]: A dictionary containing the form data, or
             None if no form data is available.
         """
         if self.content_type.startswith('multipart/'):
