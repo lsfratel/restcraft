@@ -1,164 +1,232 @@
-import unittest
 from io import BytesIO
 
-from restcraft.conf import settings
-from restcraft.core import Request
-from restcraft.core.exceptions import HTTPException
+import pytest
+
+from restcraft import RestCraft
+from restcraft.http import Request
 
 
-class Settings:
-    MAX_BODY_SIZE = 24 * 1024
-
-
-class App:
-    config = Settings()
-
-
-class TestRequest(unittest.TestCase):
+def test_request_method():
+    app = RestCraft(config=object())
     environ = {
-        'PATH_INFO': '/hello',
-        'REQUEST_METHOD': 'PATCH',
-        'CONTENT_TYPE': 'application/json; charset=utf-8',
-        'CONTENT_LENGTH': str(
-            len(b'{"firstname": "john", "lastname": "doe"}')
-        ),
-        'HTTP_AUTHORIZATION': 'Bearer',
-        'HTTP_HOST': 'localhost:8080',
-        'HTTP_ACCEPT': '*/*',
-        'QUERY_STRING': 'a=1&name=lucas',
-        'restcraft.app': App(),
-        'wsgi.input': BytesIO(b'{"firstname": "john", "lastname": "doe"}'),
-        'wsgi.url_scheme': 'http',
+        "REQUEST_METHOD": "POST",
+        "wsgi.input": BytesIO(),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
     }
-    params = {'param_1': 1, 'param_2': 3}
 
-    def setUp(self) -> None:
-        self.req = Request(
-            environ=self.environ.copy(),
-            params=self.params.copy(),
-        )
+    Request.bind(environ)
+    request = Request.current()
 
-    def test_request_params(self):
-        self.assertDictEqual(self.req.params, self.params)
+    assert request.method == "POST"
+    Request.clear()
 
-    def test_request_set_params(self):
-        param = {'pk': 1}
-        self.req.set_params = param
-        self.assertDictEqual(self.req.params, param)
 
-    def test_request_app(self):
-        self.assertIsInstance(self.req.app, object)
+def test_request_path():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "GET",
+        "wsgi.input": BytesIO(),
+        "PATH_INFO": "/example/path",
+        "wsgi.application": app,
+    }
 
-    def test_request_json_body(self):
-        form = self.req.json
+    Request.bind(environ)
+    request = Request.current()
 
-        assert form is not None
+    assert request.path == "/example/path"
+    Request.clear()
 
-        self.assertEqual(form.get('firstname'), 'john')
-        self.assertEqual(form.get('lastname'), 'doe')
 
-    def test_request_json_body_error(self):
-        self.req.env['wsgi.input'] = BytesIO(b'error')
-        with self.assertRaises(HTTPException) as e:
-            _ = self.req.json
-        resp = e.exception
-        self.assertEqual(resp.status_code, 400)
-        self.assertDictEqual(
-            resp.body,
-            {
-                'code': 'MALFORMED_BODY',
-                'message': 'The request body could not be parsed as JSON.',
-            },
-        )
+def test_request_headers():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "GET",
+        "wsgi.input": BytesIO(),
+        "HTTP_CUSTOM_HEADER": "HeaderValue",
+        "CONTENT_TYPE": "application/json",
+        "CONTENT_LENGTH": "123",
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
 
-    def test_request_form_body(self):
-        string = 'firstname=john&lastname=doe&lastname=lfs&number=1&arroz=2'
-        self.req.env['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
-        self.req.env['CONTENT_LENGTH'] = str(len(string))
-        self.req.env['wsgi.input'] = BytesIO(string.encode())
+    Request.bind(environ)
+    request = Request.current()
 
-        form = self.req.form
+    print(request.headers)
 
-        assert form is not None
+    assert request.headers["custom-header"] == "HeaderValue"
+    assert request.headers["content-type"] == "application/json"
+    assert request.headers["content-length"] == "123"
+    Request.clear()
 
-        self.assertEqual(form.get('firstname'), 'john')
-        self.assertEqual(form.get('lastname', index=0), 'doe')
-        self.assertEqual(form.get('lastname', index=1), 'lfs')
-        self.assertEqual(form.get('number', type=int), 1)
 
-    def test_request_header(self):
-        headers = {
-            'authorization': 'Bearer',
-            'host': 'localhost:8080',
-            'accept': '*/*',
-        }
-        self.assertDictEqual(self.req.header, headers)
+def test_request_is_secure():
+    app = RestCraft(config=object())
+    secure_environ = {
+        "REQUEST_METHOD": "GET",
+        "wsgi.input": BytesIO(),
+        "wsgi.url_scheme": "https",
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
+    insecure_environ = {
+        "REQUEST_METHOD": "GET",
+        "wsgi.input": BytesIO(),
+        "wsgi.url_scheme": "http",
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
 
-    def test_request_origin(self):
-        origin = 'http://localhost:8080'
-        self.assertEqual(self.req.origin, origin)
+    Request.bind(secure_environ)
+    request = Request.current()
+    assert request.is_secure is True
 
-    def test_request_url(self):
-        url = 'http://localhost:8080/hello'
-        self.assertEqual(self.req.url, url)
+    Request.clear()
 
-    def test_request_href(self):
-        href = 'http://localhost:8080/hello?a=1&name=lucas'
-        self.assertEqual(self.req.href, href)
+    Request.bind(insecure_environ)
+    request = Request.current()
+    assert request.is_secure is False
 
-    def test_request_method(self):
-        self.assertEqual(self.req.method, 'PATCH')
+    Request.clear()
 
-    def test_request_path(self):
-        self.assertEqual(self.req.path, '/hello')
 
-    def test_request_query(self):
-        qs = self.req.query
+def test_request_content_type():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "GET",
+        "CONTENT_TYPE": "application/json",
+        "wsgi.input": BytesIO(),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
 
-        assert qs is not None
+    Request.bind(environ)
+    request = Request.current()
 
-        self.assertEqual(qs.get('a'), '1')
-        self.assertEqual(qs.get('name'), 'lucas')
+    assert request.content_type == "application/json"
+    Request.clear()
 
-    def test_request_host(self):
-        host = 'localhost:8080'
-        self.assertEqual(self.req.host, host)
 
-    def test_request_content_type_charset(self):
-        charset = 'utf-8'
-        self.assertEqual(self.req.charset, charset)
+def test_request_content_length():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "GET",
+        "CONTENT_LENGTH": "256",
+        "wsgi.input": BytesIO(),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
 
-    def test_request_content_length(self):
-        length = len(b'{"firstname": "john", "lastname": "doe"}')
-        self.assertEqual(self.req.content_length, length)
+    Request.bind(environ)
+    request = Request.current()
 
-    def test_request_protocol(self):
-        protocol = 'HTTP'
-        self.assertEqual(self.req.protocol, protocol)
+    assert request.content_length == 256
+    Request.clear()
 
-    def test_request_secure(self):
-        self.assertEqual(self.req.secure, False)
-        self.req.env['wsgi.url_scheme'] = 'https'
-        self.assertEqual(self.req.secure, True)
 
-    def test_request_accept(self):
-        accept = '*/*'
-        self.assertEqual(self.req.accept, accept)
+def test_request_query():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "GET",
+        "QUERY_STRING": "key1=value1&key2=value2&key2=value3",
+        "wsgi.input": BytesIO(),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
 
-    def test_request_content_type(self):
-        content_type = 'application/json; charset=utf-8'
-        self.assertEqual(self.req.content_type, content_type)
+    Request.bind(environ)
+    request = Request.current()
 
-    def test_request_max_body_size(self):
-        settings.MAX_BODY_SIZE = 10  # type: ignore
-        with self.assertRaises(HTTPException) as e:
-            _ = self.req.json
-        resp = e.exception
-        self.assertEqual(resp.status_code, 413)
-        self.assertDictEqual(
-            resp.body,
-            {
-                'code': 'REQUEST_BODY_TOO_LARGE',
-                'message': 'Request body too large.',
-            },
-        )
+    assert request.query == {"key1": "value1", "key2": ["value2", "value3"]}
+    Request.clear()
+
+
+def test_request_forms():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "CONTENT_TYPE": "application/x-www-form-urlencoded",
+        "CONTENT_LENGTH": "11",
+        "wsgi.input": BytesIO(b"key=value"),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
+
+    Request.bind(environ)
+    request = Request.current()
+
+    assert request.forms == {"key": "value"}
+    Request.clear()
+
+
+def test_request_files():
+    app = RestCraft(config=object())
+    boundary = "WebKitFormBoundary"
+    data = b"""--WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+file content
+--WebKitFormBoundary
+Content-Disposition: form-data; name="file2"
+
+lsfratel
+--WebKitFormBoundary--"""
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "CONTENT_TYPE": f"multipart/form-data; boundary={boundary}",
+        "CONTENT_LENGTH": str(len(data)),
+        "wsgi.input": BytesIO(data),
+        "PATH_INFO": "/upload",
+        "wsgi.application": app,
+    }
+
+    Request.bind(environ)
+    request = Request.current()
+    file_data = request.files["file"]
+    field_data = request.forms["file2"]
+
+    assert file_data["filename"] == "test.txt"
+    assert file_data["content_type"] == "text/plain"
+
+    assert field_data == "lsfratel"
+    Request.clear()
+
+
+def test_request_json():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "CONTENT_TYPE": "application/json",
+        "CONTENT_LENGTH": "17",
+        "wsgi.input": BytesIO(b'{"key": "value"}'),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
+
+    Request.bind(environ)
+    request = Request.current()
+
+    assert request.json == {"key": "value"}
+    Request.clear()
+
+
+def test_request_bind_and_clear():
+    app = RestCraft(config=object())
+    environ = {
+        "REQUEST_METHOD": "GET",
+        "wsgi.input": BytesIO(),
+        "PATH_INFO": "/",
+        "wsgi.application": app,
+    }
+
+    Request.bind(environ)
+    request = Request.current()
+
+    assert request.path == "/"
+
+    Request.clear()
+
+    with pytest.raises(RuntimeError):
+        Request.current()

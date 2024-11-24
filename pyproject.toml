@@ -38,54 +38,34 @@ keywords = [
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
+[dependency-groups]
+lint = [
+    "ruff>=0.7.4",
+    "mypy>=1.13.0",
+]
+test = [
+    "pytest>=8.3.3",
+    "pytest-cov>=6.0.0",
+]
+
+[tool.ruff]
+select = ["B", "C4", "E", "F", "I", "W", "UP"]
+ignore = ["E501", "W191", "B006", "B009", "B010", "B019"]
+include = ["**/*.py", "**/*.pyi", "**/pyproject.toml"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+strict = true
+
 [tool.pdm]
 distribution = true
 
 [tool.pdm.version]
 source = "file"
-path = "src/restcraft/__init__.py"
+path = "src/restcraft/__version__.py"
 
 [tool.pdm.scripts]
-dev = "gunicorn --reload --threads 2 tests.test_app.wsgi"
-test = "python -m coverage run -m unittest"
-coverage = "python -m coverage"
-tc = { composite = ["test", "coverage html"] }
-
-[tool.pdm.dev-dependencies]
-lint = ["ruff"]
-test = ["gunicorn", "webtest", "coverage", "snakeviz"]
-
-[tool.ruff]
-line-length = 79
-
-select = [
-  "B",
-  "C4",
-  "E",
-  "F",
-  "PGH",
-  "RUF",
-  "W",
-  "YTT",
-]
-
-
-[tool.ruff.lint]
-ignore = [
-  "B006",
-  "B010",
-  "B009",
-  "B019",
-  "B018",
-  "B019",
-  "RUF012"
-]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 15
-
-[tool.ruff.format]
-quote-style = "single"
-indent-style = "space"
-docstring-code-format = true
-docstring-code-line-length = 79
+lint = "ruff ."
+fmt = "ruff format ."

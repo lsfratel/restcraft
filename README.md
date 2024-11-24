@@ -1,68 +1,302 @@
-# RestCraft WSGI Framework
+# RestCraft
 
-RestCraft is a lightweight WSGI framework for Python, following the principles of minimalist design. It provides a solid foundation for developing web applications.
+RestCraft is a lightweight, modular framework designed to build modern web applications in Python. It provides essential tools and components to manage HTTP requests, responses, routing, and middleware, allowing you to focus on building features without being overwhelmed by boilerplate code.
 
-## Framework Structure
+### Key Features
 
-RestCraft is divided into two main parts:
+- **Zero External Dependencies**: RestCraft is built entirely with Python's standard library, ensuring a minimal footprint and maximum compatibility.
+- **Powerful Routing System**: Support for dynamic and static routes, route merging, and modular blueprints for better organization.
+- **Request and Response Handling**: A clean and extensible API to manage HTTP requests, responses, cookies, and headers.
+- **Pluggable Architecture**: Add plugins to extend functionality with fine-grained control over their application.
+- **Built-in Middleware for CORS**: Enable Cross-Origin Resource Sharing with a simple plugin.
+- **Exception Handling**: Centralized error handling with customizable exception responses.
 
-- **Framework:** Provides the tools, libraries, and base structures needed for web application development. This includes mechanisms for routing requests, handling responses, and a robust middleware system.
+Whether you're building a simple API or a large-scale application, RestCraft gives you the flexibility and control you need while staying lightweight and dependency-free.
 
-- **Project:** The specific application created by the developer using the framework. Here, the developer can define routes, views, middlewares, and any other application-specific logic.
+## Installation
 
-## Main Features
+To install **RestCraft**, just pip install:
 
-### Settings
+```bash
+pip install restcraft
+```
 
-- **Configuration File:** Centralizes project settings, allowing the definition of directories for dependencies such as views and middleware folders.
+## Getting Started
 
-### Middlewares
+Here’s a quick example to set up and run a simple **RestCraft** application:
 
-- **Early Return:** Allows for the early interruption and return of a request before reaching the final handler.
-- **Request/Response Modification:** Facilitates the alteration of response and request objects at any stage of the process.
-- **Lifecycle Methods:**
-  - **before_route:** Executed before a route handler, useful for preprocessing logic.
-  - **before_handler:** Executed after route matching and before the handler, ideal for validations and authorizations.
-  - **after_handler:** Invoked after the route handler's execution, allowing for modification of the response before it is sent to the client.
+```python
+from restcraft import RestCraft, Router, JSONResponse
+from restcraft.views import metadata
 
-### Views
+from .config import configuration
 
-- **Classes:** Uses a class-based system to define views, providing an organized and reusable structure.
-- **Defines Routes:** Allows for the explicit definition of routes within view classes.
-- **Lifecycle Methods:**
-  - **before_handler:** Executed before the handler.
-  - **handler:** Route handler where the main logic of the request is processed.
-  - **after_handler:** Executed after the handler.
-  - **on_exception:** Executed if an exception occurs during the handling of a request.
-- **Route Attributes:**
-  - **route:** The route pattern.
-  - **methods:** List of HTTP methods supported by this view (e.g., GET, POST).
+# Define your views
+class HelloWorldView:
+    @metadata(methods=["GET"])
+    def get(self):
+        return JSONResponse({"message": "Hello, World!"})
+
+# Set up the application
+app = RestCraft(config=configuration)
+
+# Set up the router
+router = Router()
+router.add_route("/hello", HelloWorldView())
+app.register_router(router)
+
+# Run the application using a WSGI server
+if __name__ == "__main__":
+    from wsgiref.simple_server import make_server
+    server = make_server("127.0.0.1", 8000, app)
+    print("Serving on http://127.0.0.1:8000")
+    server.serve_forever()
+```
+
+## Core Concepts
 
 ### Routes
 
-- **Dynamic Routing:** RestCraft allows you to specify parts of the URL to be dynamic. These dynamic segments can capture parts of the URL as variables, which can then be passed to your request handlers. For example, defining a route like "/user/\<username\>" can capture any username and pass it to the handler.
-- **Wildcard Filters:** You can use wildcard filters in the routes to capture data with specific formats. For instance, you can define a route to only accept integers int or str, uuid and slug. This lets you tailor the handler functions to specific data types or patterns, improving flexibility and reducing the need for validating URLs within your handlers.
+RestCraft provides a powerful routing system to map URL paths to specific views. The `Router` class allows you to register routes, handle dynamic parameters, and merge routers for modular and reusable routing logic.
 
-### Dependency Injection System
+#### Adding Routes
 
-Our custom Dependency Injection (DI) system is designed to manage and inject dependencies dynamically, promoting loose coupling and enhanced modularity within the application. The DI system supports various types of dependency lifetimes, ensuring that components can be instantiated and used according to the specific needs of the application. Below are the types of lifetimes supported:
+To add a route, use the `add_route` method. Specify the path and the corresponding view object or class:
 
-#### Supported Dependency Lifetimes
+```python
+from restcraft.http.router import Router
+from restcraft.http.response import JSONResponse
+from restcraft.views import metadata
 
-- **Singleton**: Singleton dependencies are created once and shared throughout the application's lifetime. Once instantiated, the same instance of a singleton dependency is returned every time it is requested. This is useful for services that maintain a consistent state or provide a shared resource across the application.
+class MyView:
+    @metadata(methods=["GET"])
+    def hello(self):
+        return JSONResponse({"message": "Hello, World!"})
 
-- **Transient**: Transient dependencies are recreated every time they are requested. This ensures that a new instance is provided to every consumer, guaranteeing that no shared state is carried over from previous uses. Transient dependencies are ideal for stateless services where each operation is expected to be independent.
+router = Router()
+router.add_route("/hello", MyView())
+```
 
-- **Scoped**: Scoped dependencies are instantiated once per request, a user session, or a specific task. All requests within the same scope share the same instance, while different scopes will have their own separate instances. This is particularly useful for operations where a common context or state needs to be maintained throughout the operation but should not be shared with other operations.
+#### Dynamic Routes
 
-### Exceptions
+Dynamic segments in paths are defined with a `:` prefix. Dynamic routes allow you to capture parts of the URL and pass them as parameters to the handler:
 
-- **Easy Custom Exceptions:** Framework supports of custom exceptions, which can be integrated into the application's error handling strategy easily.
+```python
+class UserView:
+    @metadata(methods=["GET"])
+    def get_user(self, id):
+        return JSONResponse({"user_id": id})
 
-### Project Template
+router.add_route("/user/:id", UserView())
 
-[restcraft-template](https://github.com/lsfratel/restcraft-template)
+# Example:
+# GET /user/42 -> {"user_id": "42"}
+```
 
-## In Development
+#### Merging Routers
 
-It's important to note that RestCraft is under development. Features and functionality may change as the framework evolves.
+The `merge` function allows you to combine multiple routers into a single router. This enables modular routing, similar to blueprints in other frameworks, making it easy to organize your application by grouping related routes.
+
+```python
+# Define a "users" module
+users_router = Router(prefix="/users")
+
+class UserView:
+    @metadata(methods=["GET"])
+    def list_users(self):
+        return JSONResponse({"users": []})
+
+    @metadata(methods=["POST"])
+    def create_user(self):
+        return JSONResponse({"message": "User created"})
+
+users_router.add_route("/", UserView())
+
+# Define a "products" module
+products_router = Router(prefix="/products")
+
+class ProductView:
+    @metadata(methods=["GET"])
+    def list_products(self):
+        return JSONResponse({"products": []})
+
+products_router.add_route("/", ProductView())
+
+# Merge modules into the main router
+app_router = Router()
+app_router.merge(users_router)
+app_router.merge(products_router)
+
+# Example:
+# GET /users -> {"users": []}
+# GET /products -> {"products": []}
+```
+
+### Request Handling
+
+Access request properties like headers, query parameters, JSON payloads, forms, and file uploads:
+
+```python
+from restcraft.http import request
+
+class UserView:
+    @metadata(methods=["POST"])
+    def create(self):
+        data = request.json
+        return JSONResponse({"received": data})
+```
+
+### Plugins
+
+Extend functionality using plugins. Plugins in RestCraft are middleware-like components that can modify the behavior of request handlers. Each plugin can be selectively applied to specific methods by using the `metadata` decorator.
+
+#### Using Plugins
+
+To register a plugin, use the `register_plugin` method of the `RestCraft` application:
+
+```python
+from restcraft.contrib.plugins.cors import CORSPlugin
+
+plugin = CORSPlugin(allow_origins=["http://example.com"])
+app.register_plugin(plugin)
+```
+
+#### Controlling Plugin Execution with Metadata
+
+The `metadata` decorator allows you to specify which plugins should run (or be excluded) for a particular method. By default, all plugins run on all methods unless specified otherwise.
+
+- **Include Plugins**: List plugin names to explicitly allow them.
+- **Exclude Plugins**: Prefix the plugin name with `-` to exclude it.
+
+Here’s an example:
+
+```python
+from restcraft.http.response import JSONResponse
+from restcraft.views import metadata
+
+class MyView:
+    # Allow all plugins (default behavior)
+    @metadata(methods=["GET"])
+    def all_plugins_allowed(self):
+        return JSONResponse({"message": "All plugins are allowed"})
+
+    # Only allow 'cors_plugin' to run
+    @metadata(methods=["POST"], plugins=["cors_plugin"])
+    def only_cors_plugin(self):
+        return JSONResponse({"message": "Only CORS plugin will run"})
+
+    # Exclude 'auth_plugin'
+    @metadata(methods=["DELETE"], plugins=["...", "-auth_plugin"])
+    def exclude_auth_plugin(self):
+        return JSONResponse({"message": "All plugins except 'auth_plugin' will run"})
+```
+
+#### Writing Your Own Plugin
+
+To create a custom plugin, subclass the `Plugin` class and implement the `apply` method:
+
+```python
+from restcraft.plugin import Plugin
+
+class CustomHeaderPlugin(Plugin):
+    name = "custom_header_plugin"
+
+    def apply(self, callback, metadata):
+        def wrapper(*args, **kwargs):
+            response = callback(*args, **kwargs)
+            response.headers["X-Custom-Header"] = "My Custom Value"
+            return response
+        return wrapper
+```
+
+Register your plugin with the application:
+
+```python
+plugin = CustomHeaderPlugin()
+app.register_plugin(plugin)
+```
+
+#### Plugin Execution Order
+
+Plugins are applied in the order they are registered in the application. To control execution order, register plugins in the desired sequence:
+
+```python
+app.register_plugin(PluginA())
+app.register_plugin(PluginB())
+```
+
+## File Uploads
+
+RestCraft handles file uploads efficiently, writing large files to disk-backed temporary storage. Here's how you can access uploaded files:
+
+```python
+class FileUploadView:
+    @metadata(methods=["POST"])
+    def upload(self):
+        file_data = request.files.get("file")
+        return JSONResponse({
+            "filename": file_data["filename"],
+            "content_type": file_data["content_type"],
+        })
+```
+
+## Cookies
+
+RestCraft includes a powerful and flexible cookie management system inspired by [Remix.run](https://remix.run). With RestCraft, you can easily create, parse, sign, and validate cookies, enabling secure state management for your web applications.
+
+### Key Features
+
+- **Serialization and Parsing**: Effortlessly serialize Python objects into cookies and parse them back into Python objects.
+- **Signed Cookies**: Use secret keys to sign cookies, ensuring their integrity and protecting against tampering.
+- **Expiration and Max-Age**: Automatically manage cookie expiration with built-in support for `Expires` and `Max-Age` attributes.
+- **Secure Defaults**: Cookies are configured to be `HttpOnly` and `Secure` by default, ensuring they are protected from client-side scripts and transmitted only over HTTPS.
+
+### Example Usage
+
+#### Creating and Serializing a Cookie
+
+```python
+from restcraft.http import Cookie
+
+# Create a new cookie with secure options
+cookie = Cookie("user_session", options={"secrets": ["my_secret_key"], "secure": True})
+
+class MyView:
+
+    @metadata(methods=["GET"])
+    def list(self):
+        # read
+        user_info = cookie.parse(request.headers["cookie"])
+
+        # set
+        return JSONResponse(data, headers={"Set-Cookie": cookie.serialize(user_info, overrides={"max_age": 60})})
+```
+
+## Custom Exception Handling
+
+Define custom exception handlers for your application:
+
+```python
+from restcraft.exceptions import RestCraftException
+
+@app.register_exception(RestCraftException)
+def handle_restcraft_exception(exc):
+    return JSONResponse({"error": exc.message}, status=exc.status)
+```
+
+## Contributing
+
+Contributions are welcome! If you'd like to improve RestCraft, follow these steps:
+
+1. Fork the repository.
+2. Create a new branch.
+3. Make your changes and write tests.
+4. Submit a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Acknowledgements
+
+Special thanks to all contributors and the Python community for inspiring this project.
