@@ -10,7 +10,7 @@ def test_router_add_route_find():
             return {"message": "GET response"}
 
     router = Router()
-    router.add_route("/test", DummyView())
+    router.add_route(r"/test", DummyView())
 
     node, params = router.find("/test")
 
@@ -26,10 +26,12 @@ def test_router_dynamic_route():
             return {"message": "GET response"}
 
     router = Router()
-    router.add_route("/users/:user_id", DummyView())
+    router.add_route(r"/users/<user_id:\d+>", DummyView())
     node, params = router.find("/users/42")
+    node2, _ = router.find("/users/asd")
 
     assert node is not None
+    assert node2 is None
     assert node.handlers["GET"]["handler"]() == {"message": "GET response"}
     assert params == {"user_id": "42"}
 
@@ -48,7 +50,7 @@ def test_router_merge_static_and_dynamic_routes():
     router = Router()
 
     router.add_route("/static", DummyView())
-    router.add_route("/dynamic/:id", AnotherDummyView())
+    router.add_route("/dynamic/<id>", AnotherDummyView())
 
     node_static, params_static = router.find("/static")
     node_dynamic, params_dynamic = router.find("/dynamic/123")
@@ -77,12 +79,12 @@ def test_router_merge():
     router2 = Router()
 
     router1.add_route("/route1", DummyView())
-    router2.add_route("/route2", AnotherDummyView())
+    router2.add_route("/route2/<id>", AnotherDummyView())
 
     router1.merge(router2)
 
     node1, _ = router1.find("/route1")
-    node2, _ = router1.find("/route2")
+    node2, _ = router1.find("/route2/1")
 
     assert node1 is not None
     assert node2 is not None
@@ -289,8 +291,8 @@ def test_router_conflicting_dynamic_routes():
 
     router = Router()
 
-    router.add_route("/test/:id", DummyView())
+    router.add_route("/test/<id>", DummyView())
     try:
-        router.add_route("/test/:name", AnotherDummyView())
+        router.add_route("/test/<name>", AnotherDummyView())
     except ValueError as e:
         assert str(e) == "Conflicting views found during merge"

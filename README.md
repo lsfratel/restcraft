@@ -79,7 +79,7 @@ router.add_route("/hello", MyView())
 
 #### Dynamic Routes
 
-Dynamic segments in paths are defined with a `:` prefix. Dynamic routes allow you to capture parts of the URL and pass them as parameters to the handler:
+Dynamic segments in paths are defined with a `<` prefix and `>` suffix. Dynamic routes allow you to capture parts of the URL and pass them as parameters to the handler:
 
 ```python
 class UserView:
@@ -87,7 +87,8 @@ class UserView:
     def get_user(self, id):
         return JSONResponse({"user_id": id})
 
-router.add_route("/user/:id", UserView())
+router.add_route("/user/<id>", UserView())
+router.add_route(r"/user/<id:\d+>", UserView())
 
 # Example:
 # GET /user/42 -> {"user_id": "42"}

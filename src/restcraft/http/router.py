@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from types import MethodType
-from typing import Any
+from typing import Any, cast
 
 from restcraft.http.response import Response
 from restcraft.plugin import Plugin
@@ -13,11 +14,13 @@ class Node:
     def __init__(
         self,
         part: str = "",
+        pattern: str | None = None,
         is_dynamic: bool = False,
         handlers: dict[str, dict[str, Any]] | None = None,
         view: object | None = None,
     ):
         self.part = part
+        self.pattern = re.compile(pattern) if pattern else pattern
         self.is_dynamic = is_dynamic
         self.handlers = handlers or {}
         self.children: dict[str, Node] = {}
@@ -28,11 +31,21 @@ class Node:
             raise ValueError("Conflicting views found during merge")
         self.view = self.view or other_node.view
         self.is_dynamic = self.is_dynamic or other_node.is_dynamic
+        self.pattern = self.pattern or other_node.pattern
+        self.part = self.part or other_node.part
         self.handlers.update(other_node.handlers)
 
     def add_child(self, key: str, part: str, is_dynamic: bool) -> Node:
+        pattern = None
+        if is_dynamic:
+            part = part[1:-1]
+            parts = part.split(":", 1)
+            if len(parts) == 2:
+                part, pattern = parts
+            else:
+                part, pattern = parts[0], r".*"
         if key not in self.children:
-            self.children[key] = Node(part, is_dynamic)
+            self.children[key] = Node(part, pattern, is_dynamic)
         return self.children[key]
 
 
@@ -47,8 +60,8 @@ class Router:
         current_node = self.root
 
         for part in parts:
-            is_dynamic = part.startswith(":")
-            key = ":" if is_dynamic else part
+            is_dynamic = part.startswith("<") and part.endswith(">")
+            key = ":dynamic:" if is_dynamic else part
             current_node = current_node.add_child(key, part, is_dynamic)
 
         if type(view) is type:
@@ -57,6 +70,26 @@ class Router:
         self._register_view_handlers(current_node, view)
         self._setup_head_handler(current_node)
         self._setup_options_handler(current_node)
+
+    def merge(self, other_router: Router):
+        self._merge_nodes(self.root, other_router.root)
+        self.find.cache_clear()
+
+    def cache_plugin(self, plugin: Plugin):
+        self._cache_plugins(self.root, plugin)
+
+    @lru_cache(maxsize=256)
+    def find(self, path: str) -> tuple[Node | None, dict[str, str] | None]:
+        parts = self._split_path(path)
+        current_node = self.root
+        params = {}
+
+        for part in parts:
+            current_node = self._match_part(current_node, part, params)
+            if not current_node:
+                return None, None
+
+        return (current_node, params) if current_node.view else (None, None)
 
     def _setup_head_handler(self, node: Node):
         if "HEAD" in node.handlers or "GET" not in node.handlers:
@@ -89,33 +122,16 @@ class Router:
             },
         }
 
-    def merge(self, other_router: Router):
-        self._merge_nodes(self.root, other_router.root)
-        self.find.cache_clear()
-
-    def cache_plugin(self, plugin: Plugin):
-        self._cache_plugins(self.root, plugin)
-
-    @lru_cache(maxsize=256)
-    def find(self, path: str) -> tuple[Node | None, dict[str, str] | None]:
-        parts = self._split_path(path)
-        current_node = self.root
-        params = {}
-
-        for part in parts:
-            current_node = self._match_part(current_node, part, params)
-            if not current_node:
-                return None, None
-
-        return (current_node, params) if current_node.view else (None, None)
-
     def _match_part(self, node: Node, part: str, params: dict):
         if part in node.children:
             return node.children[part]
 
-        if ":" in node.children:
-            dynamic_node = node.children[":"]
-            params[dynamic_node.part[1:]] = part
+        if ":dynamic:" in node.children:
+            dynamic_node = node.children[":dynamic:"]
+            pattern = cast(re.Pattern[str], dynamic_node.pattern)
+            if not pattern.match(part):
+                return None
+            params[dynamic_node.part] = part
             return dynamic_node
 
         return None
