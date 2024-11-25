@@ -11,7 +11,7 @@ def _get_funcs(cls: object, attr="__metadata__"):
 
 def extract_metadata(cls: object):
     for _, func in _get_funcs(cls):
-        func_metadata = getattr(func, "__metadata__", {}).copy()
+        func_metadata = getattr(func, "__metadata__", {})
 
         http_verbs = func_metadata.get("methods", None)
 
