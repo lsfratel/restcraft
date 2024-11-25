@@ -3,12 +3,23 @@ from restcraft.plugin import Plugin
 from restcraft.views import metadata
 
 
-def test_router_add_route_find():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
+class DummyView:
+    @metadata(methods=["GET"])
+    def get(self):
+        return {"message": "GET response"}
 
+
+class AnotherDummyView:
+    @metadata(methods=["GET"])
+    def get(self):
+        return {"message": "GET response"}
+
+    @metadata(methods=["PUT"])
+    def put(self):
+        return {"message": "PUT response"}
+
+
+def test_router_add_route_find():
     router = Router()
     router.add_route(r"/test", DummyView())
 
@@ -20,11 +31,6 @@ def test_router_add_route_find():
 
 
 def test_router_dynamic_route():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
     router = Router()
     router.add_route(r"/users/<user_id:\d+>", DummyView())
     node, params = router.find("/users/42")
@@ -37,16 +43,6 @@ def test_router_dynamic_route():
 
 
 def test_router_merge_static_and_dynamic_routes():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
-    class AnotherDummyView:
-        @metadata(methods=["PUT"])
-        def put(self):
-            return {"message": "PUT response"}
-
     router = Router()
 
     router.add_route("/static", DummyView())
@@ -65,16 +61,6 @@ def test_router_merge_static_and_dynamic_routes():
 
 
 def test_router_merge():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
-    class AnotherDummyView:
-        @metadata(methods=["PUT"])
-        def put(self):
-            return {"message": "PUT response"}
-
     router1 = Router()
     router2 = Router()
 
@@ -103,11 +89,6 @@ def test_router_cache_plugin():
 
             return wrapper
 
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
     router = Router()
     router.add_route("/test", DummyView())
 
@@ -131,11 +112,6 @@ def test_router_not_found():
 
 
 def test_router_method_not_allowed():
-    class AnotherDummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
     router = Router()
 
     router.add_route("/test", AnotherDummyView())
@@ -148,16 +124,6 @@ def test_router_method_not_allowed():
 
 
 def test_router_conflicting_routes():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
-    class AnotherDummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
     router = Router()
 
     router.add_route("/test", DummyView())
@@ -226,11 +192,6 @@ def test_router_plugin_with_include():
 
 
 def test_router_auto_generate_head_handler():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
     router = Router()
     router.add_route("/head_test", DummyView())
     node, _ = router.find("/head_test")
@@ -241,15 +202,9 @@ def test_router_auto_generate_head_handler():
 
 
 def test_router_auto_generate_options_handler():
-    class MyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
-    view = MyView()
     router = Router()
 
-    router.add_route("/options_test", view)
+    router.add_route("/options_test", DummyView())
     node, _ = router.find("/options_test")
 
     assert node is not None
@@ -275,20 +230,6 @@ def test_router_custom_head_and_options():
 
 
 def test_router_conflicting_dynamic_routes():
-    class DummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
-    class AnotherDummyView:
-        @metadata(methods=["GET"])
-        def get(self):
-            return {"message": "GET response"}
-
-        @metadata(methods=["PUT"])
-        def put(self):
-            return {"message": "PUT response"}
-
     router = Router()
 
     router.add_route("/test/<id>", DummyView())
@@ -296,3 +237,49 @@ def test_router_conflicting_dynamic_routes():
         router.add_route("/test/<name>", AnotherDummyView())
     except ValueError as e:
         assert str(e) == "Conflicting views found during merge"
+
+
+def test_router_auto_generate_head_and_options_metadata():
+    router = Router()
+    router.add_route("/test", DummyView())
+    node, _ = router.find("/test")
+
+    assert node is not None
+    assert "HEAD" in node.handlers
+    assert "OPTIONS" in node.handlers
+
+    head_metadata = node.handlers["HEAD"]["metadata"]
+    get_metadata = node.handlers["GET"]["metadata"]
+
+    options_metadata = node.handlers["OPTIONS"]["metadata"]
+    methods = list(node.handlers.keys())
+
+    assert head_metadata == {**get_metadata, "methods": ["GET", "HEAD"]}
+    assert options_metadata == {"methods": methods, "plugins": ["..."]}
+
+
+def test_router_head_and_options_isolation():
+    router = Router()
+    router.add_route("/test", DummyView())
+
+    node, _ = router.find("/test")
+    assert node is not None
+
+    head_handler = node.handlers["HEAD"]["handler"]
+    options_handler = node.handlers["OPTIONS"]["handler"]
+
+    assert head_handler is node.handlers["GET"]["handler"]
+    assert options_handler == router._handler_options
+
+
+def test_router_dynamic_route_with_head_and_options():
+    router = Router()
+    router.add_route("/users/<user_id>", DummyView())
+    node, _ = router.find("/users/42")
+
+    assert node is not None
+    assert "HEAD" in node.handlers
+    assert "OPTIONS" in node.handlers
+    assert node.handlers["HEAD"]["handler"]() == {"message": "GET response"}
+    response = node.handlers["OPTIONS"]["handler"]()
+    assert response.status == "204 No Content"

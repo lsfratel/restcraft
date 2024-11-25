@@ -96,11 +96,8 @@ class Router:
             return
 
         handler = node.handlers["GET"]["handler"]
-        metadata = node.handlers["GET"]["metadata"]
+        metadata = node.handlers["GET"]["metadata"].copy()
         metadata["methods"].append("HEAD")
-
-        if "OPTIONS" not in metadata["methods"]:
-            metadata["methods"].append("OPTIONS")
 
         node.handlers["HEAD"] = {
             "handler": handler,
@@ -137,12 +134,11 @@ class Router:
         return None
 
     def _register_view_handlers(self, node: Node, view: object):
-        for verb, meta in extract_metadata(view):
-            for method_name, method_meta in meta.items():
-                node.handlers[verb] = {
-                    "handler": getattr(view, method_name),
-                    "metadata": method_meta,
-                }
+        for verb, handler, metadata in extract_metadata(view):
+            node.handlers[verb] = {
+                "handler": handler,
+                "metadata": metadata.copy(),
+            }
         node.view = view
 
     def _merge_nodes(self, current_node: Node, other_node: Node):

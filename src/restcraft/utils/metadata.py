@@ -10,7 +10,7 @@ def _get_funcs(cls: object, attr="__metadata__"):
 
 
 def extract_metadata(cls: object):
-    for name, func in _get_funcs(cls):
+    for _, func in _get_funcs(cls):
         func_metadata = getattr(func, "__metadata__", {}).copy()
 
         http_verbs = func_metadata.get("methods", None)
@@ -19,4 +19,4 @@ def extract_metadata(cls: object):
             continue
 
         for verb in http_verbs:
-            yield verb, {name: func_metadata}
+            yield verb, func, func_metadata
