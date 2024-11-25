@@ -5,6 +5,8 @@ import threading
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import parse_qs
 
+from restcraft.utils import make_fields
+
 if TYPE_CHECKING:
     from restcraft.restcraft import RestCraft
 
@@ -14,16 +16,6 @@ from restcraft.exceptions import RestCraftException
 
 class Request:
     _local = threading.local()
-    # __slots__ = (
-    #     "ENV",
-    #     "_query",
-    #     "_forms",
-    #     "_files",
-    #     "_json",
-    #     "_headers",
-    #     "__parsed_query",
-    #     "__parsed_body",
-    # )
 
     def __init__(self, environ: dict[str, Any]):
         self.ENV = environ
@@ -72,19 +64,18 @@ class Request:
                 data = stream.read(clength)
                 if not data:
                     return self._json
-                self._json = json.loads(data.decode("utf-8"))
+                self._json = json.loads(data.decode(self.charset))
             elif ctype == "application/x-www-form-urlencoded":
                 stream = self.ENV["wsgi.input"]
-                self._forms = {
-                    k: v[0] if len(v) == 1 else v
-                    for k, v in parse_qs(stream.read(clength).decode("utf-8")).items()
-                }
+                self._forms = make_fields(
+                    parse_qs(stream.read(clength).decode(self.charset))
+                )
             elif ctype == "multipart/form-data":
                 parser = MultipartParser(self.ENV, max_body_size=self._max_body_size())
                 forms, files = parser.parse()
 
-                self._forms = {k: v[0] if len(v) == 1 else v for k, v in forms.items()}
-                self._files = {k: v[0] if len(v) == 1 else v for k, v in files.items()}
+                self._forms = make_fields(forms)
+                self._files = make_fields(files)
         except RestCraftException:
             raise
         except Exception as e:
@@ -115,6 +106,13 @@ class Request:
         return self._headers
 
     @property
+    def charset(self):
+        if "charset=" in self.content_type:
+            return self.content_type.split("charset=")[1].split(";")[0]
+
+        return "utf-8"
+
+    @property
     def is_secure(self):
         return self.ENV.get("wsgi.url_scheme", "http") == "https"
 
@@ -142,10 +140,7 @@ class Request:
         if not qs:
             return self._query
 
-        self._query = {
-            k: v[0] if len(v) == 1 else v
-            for k, v in parse_qs(qs, keep_blank_values=True).items()
-        }
+        self._query = make_fields(parse_qs(qs, keep_blank_values=True))
 
         return self._query
 
