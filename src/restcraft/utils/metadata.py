@@ -1,22 +1,22 @@
+from collections.abc import Generator
+from copy import deepcopy
 from inspect import getmembers, ismethod
+from types import MethodType
+from typing import Any
 
 
-def _get_funcs(cls: object, attr="__metadata__"):
+def _get_metadata_methods(cls: object, attr="__metadata__"):
     return (
-        (name, func)
-        for name, func in getmembers(cls, predicate=ismethod)
-        if hasattr(func, attr)
+        method
+        for _, method in getmembers(cls, predicate=ismethod)
+        if hasattr(method, attr)
     )
 
 
-def extract_metadata(cls: object):
-    for _, func in _get_funcs(cls):
-        func_metadata = getattr(func, "__metadata__", {})
+def extract_metadata(
+    cls: object,
+) -> Generator[tuple[dict[str, Any], MethodType], None, None]:
+    for method in _get_metadata_methods(cls):
+        metadata = getattr(method, "__metadata__")
 
-        http_verbs = func_metadata.get("methods", None)
-
-        if not http_verbs:
-            continue
-
-        for verb in http_verbs:
-            yield verb, func, func_metadata
+        yield deepcopy(metadata), method

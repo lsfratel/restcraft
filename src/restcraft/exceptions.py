@@ -2,7 +2,13 @@ from typing import Any
 
 
 class RestCraftException(Exception):
-    def __init__(self, message: str, *, status: int = 500, errors: dict[str, Any] = {}):
+    def __init__(
+        self,
+        message: str = "Internal Server Error",
+        *,
+        status: int = 500,
+        errors: dict[str, Any] = {},
+    ):
         super().__init__(message, status, errors)
         self.message = message
         self.status = status
@@ -16,11 +22,25 @@ class RestCraftException(Exception):
 
 
 class MethodNotAllowedException(RestCraftException):
-    pass
+    def __init__(
+        self,
+        message: str = "The request method is not allowed",
+        *,
+        status: int = 405,
+        errors: dict[str, Any] = {},
+    ):
+        super().__init__(message, status=status, errors=errors)
 
 
 class NotFoundException(RestCraftException):
-    pass
+    def __init__(
+        self,
+        message="The requested resource was not found",
+        *,
+        status: int = 404,
+        errors: dict[str, Any] = {},
+    ):
+        super().__init__(message, status=status, errors=errors)
 
 
 class BodyException(RestCraftException):

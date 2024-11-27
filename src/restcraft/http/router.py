@@ -1,191 +1,157 @@
 from __future__ import annotations
 
 import re
-from functools import lru_cache
 from types import MethodType
-from typing import Any, cast
+from typing import Any
 
-from restcraft.http.response import Response
-from restcraft.plugin import Plugin
+from restcraft.exceptions import MethodNotAllowedException, NotFoundException
 from restcraft.utils import extract_metadata
 
 
 class Node:
     def __init__(
         self,
-        part: str = "",
-        pattern: str | None = None,
+        segment: str = "",
+        *,
+        param="",
         is_dynamic: bool = False,
-        handlers: dict[str, dict[str, Any]] | None = None,
-        view: object | None = None,
     ):
-        self.part = part
-        self.pattern = re.compile(pattern) if pattern else pattern
-        self.is_dynamic = is_dynamic
-        self.handlers = handlers or {}
         self.children: dict[str, Node] = {}
-        self.view = view
+        self.patterns: dict[re.Pattern[str], Node] = {}
+        self.handlers: dict[str, dict[str, Any]] = {}
+        self.segment = segment
+        self.param = param
+        self.is_dynamic = is_dynamic
+        self.view: Any = None
 
-    def merge(self, other_node: Node):
-        if self.view and other_node.view:
-            raise ValueError("Conflicting views found during merge")
-        self.view = self.view or other_node.view
-        self.is_dynamic = self.is_dynamic or other_node.is_dynamic
-        self.pattern = self.pattern or other_node.pattern
-        self.part = self.part or other_node.part
-        self.handlers.update(other_node.handlers)
 
-    def add_child(self, key: str, part: str, is_dynamic: bool) -> Node:
-        pattern = None
-        if is_dynamic:
-            part = part[1:-1]
-            parts = part.split(":", 1)
-            if len(parts) == 2:
-                part, pattern = parts
-            else:
-                part, pattern = parts[0], r".*"
-        if key not in self.children:
-            self.children[key] = Node(part, pattern, is_dynamic)
-        return self.children[key]
+def is_dynamic(segment: str, prefix="<", suffix=">"):
+    return segment.startswith(prefix) and segment.endswith(suffix)
 
 
 class Router:
     def __init__(self, prefix: str = ""):
         self.root: Node = Node()
         self.prefix: str = prefix.rstrip("/")
+        self.dynamic_key = ":restcraft:dynamic:"
 
     def add_route(self, path: str, view: object | type):
+        node = self.root
         full_path = f"{self.prefix}{path}"
-        parts = self._split_path(full_path)
-        current_node = self.root
+        segments = self._split_path(full_path)
 
-        for part in parts:
-            is_dynamic = part.startswith("<") and part.endswith(">")
-            key = ":dynamic:" if is_dynamic else part
-            current_node = current_node.add_child(key, part, is_dynamic)
+        for segment in segments:
+            if is_dynamic(segment):
+                node = node.children.setdefault(self.dynamic_key, Node())
+                parts = segment[1:-1].split(":", 1)
+                if len(parts) == 2:
+                    param, pattern = parts
+                else:
+                    param, pattern = parts[0], r".*"
+                node = node.patterns.setdefault(
+                    re.compile(pattern), Node(pattern, param=param, is_dynamic=True)
+                )
+            else:
+                node = node.children.setdefault(segment, Node())
+
+        if node.view is not None:
+            raise RuntimeError(
+                "Conflicting routes during registration of "
+                f"{node.view.__class__.__name__} "
+                "and "
+                f"{view.__class__.__name__}"
+            )
 
         if type(view) is type:
             view = view()
 
-        self._register_view_handlers(current_node, view)
-        self._setup_head_handler(current_node)
-        self._setup_options_handler(current_node)
+        node.view = view
+
+        self._register_view_handlers(node, view)
+
+    def dispatch(
+        self,
+        method: str,
+        path: str,
+    ) -> tuple[MethodType, dict[str, Any], dict[str, str]]:
+        node, params = self._find_node(path)
+        if node is None:
+            raise NotFoundException
+
+        methods = {method}
+
+        if method == "HEAD":
+            methods.add("GET")
+
+        for hmethod in methods:
+            if hmethod in node.handlers:
+                return (
+                    node.handlers[hmethod]["handler"],
+                    node.handlers[hmethod]["metadata"],
+                    params,
+                )
+
+        raise MethodNotAllowedException
 
     def merge(self, other_router: Router):
         self._merge_nodes(self.root, other_router.root)
-        self.find.cache_clear()
 
-    def cache_plugin(self, plugin: Plugin):
-        self._cache_plugins(self.root, plugin)
+    def _find_node(self, path: str):
+        node = self.root
+        segments = self._split_path(path)
+        params: dict[str, str] = {}
 
-    @lru_cache(maxsize=256)
-    def find(self, path: str) -> tuple[Node | None, dict[str, str] | None]:
-        parts = self._split_path(path)
-        current_node = self.root
-        params = {}
+        for segment in segments:
+            if segment in node.children:
+                node = node.children[segment]
+            elif self.dynamic_key in node.children:
+                dynamic_node = node.children[self.dynamic_key]
+                for pattern in dynamic_node.patterns:
+                    if match := pattern.match(segment):
+                        node = dynamic_node.patterns[pattern]
+                        params[node.param] = match.group(0)
+                        break
 
-        for part in parts:
-            current_node = self._match_part(current_node, part, params)
-            if not current_node:
-                return None, None
+        if node.view is None:
+            return None, params
 
-        return (current_node, params) if current_node.view else (None, None)
-
-    def _setup_head_handler(self, node: Node):
-        if "HEAD" in node.handlers or "GET" not in node.handlers:
-            return
-
-        handler = node.handlers["GET"]["handler"]
-        metadata = node.handlers["GET"]["metadata"].copy()
-        metadata["methods"].append("HEAD")
-
-        node.handlers["HEAD"] = {
-            "handler": handler,
-            "metadata": metadata,
-        }
-
-    def _setup_options_handler(self, node: Node):
-        if "OPTIONS" in node.handlers:
-            return
-
-        methods = list(node.handlers.keys())
-        methods.append("OPTIONS")
-
-        node.handlers["OPTIONS"] = {
-            "handler": self._handler_options,
-            "metadata": {
-                "methods": methods,
-                "plugins": ["..."],
-            },
-        }
-
-    def _match_part(self, node: Node, part: str, params: dict):
-        if part in node.children:
-            return node.children[part]
-
-        if ":dynamic:" in node.children:
-            dynamic_node = node.children[":dynamic:"]
-            pattern = cast(re.Pattern[str], dynamic_node.pattern)
-            if not pattern.match(part):
-                return None
-            params[dynamic_node.part] = part
-            return dynamic_node
-
-        return None
+        return node, params
 
     def _register_view_handlers(self, node: Node, view: object):
-        for verb, handler, metadata in extract_metadata(view):
-            node.handlers[verb] = {
-                "handler": handler,
-                "metadata": metadata.copy(),
-            }
-        node.view = view
+        for metadata, handler in extract_metadata(view):
+            for verb in metadata["methods"]:
+                node.handlers[verb] = {
+                    "handler": handler,
+                    "metadata": metadata,
+                }
 
-    def _merge_nodes(self, current_node: Node, other_node: Node):
-        current_node.merge(other_node)
-        for key, other_child in other_node.children.items():
-            if key in current_node.children:
-                self._merge_nodes(current_node.children[key], other_child)
+    def _merge_nodes(self, node: Node, other: Node):
+        if node.view and other.view:
+            raise RuntimeError(
+                "Conflicting routes during merge of "
+                f"{node.view.__class__.__name__} "
+                "and "
+                f"{other.view.__class__.__name__}"
+            )
+
+        node.view = other.view
+        node.is_dynamic = other.is_dynamic
+        node.param = other.param
+        node.segment = other.segment
+        node.handlers.update(other.handlers)
+
+        for key, other_child in other.children.items():
+            if key in node.children:
+                self._merge_nodes(node.children[key], other_child)
             else:
-                current_node.children[key] = other_child
+                node.children[key] = other_child
 
-    def _cache_plugins(self, node: Node, plugin: Plugin):
-        stack = [node]
-        while stack:
-            current_node = stack.pop()
-            for child in current_node.children.values():
-                stack.append(child)
+        for key, other_pattern in other.patterns.items():
+            if key in node.patterns:
+                self._merge_nodes(node.patterns[key], other_pattern)
+            else:
+                node.patterns[key] = other_pattern
 
-            if not current_node.view:
-                continue
-
-            for verb, options in current_node.handlers.items():
-                metadata = options["metadata"]
-                allowed = set(metadata["plugins"])
-                if f"-{plugin.name}" in allowed:
-                    continue
-                cached_plugins = self._cached_plugins(options["handler"])
-                if (
-                    "..." in allowed or plugin.name in allowed
-                ) and f"{verb}_{plugin.name}" not in cached_plugins:
-                    options["handler"] = plugin.apply(
-                        options["handler"], options["metadata"]
-                    )
-                    cached_plugins.add(f"{verb}_{plugin.name}")
-
-    @staticmethod
-    def _cached_plugins(handler: MethodType) -> set:
-        return getattr(
-            handler.__func__,
-            "__cached__",
-            setattr(handler.__func__, "__cached__", set())
-            or handler.__func__.__cached__,  # type: ignore
-        )
-
-    @staticmethod
-    def _split_path(path: str) -> list[str]:
-        """Split the path into its components."""
+    @classmethod
+    def _split_path(cls, path: str) -> list[str]:
         return [part for part in path.split("/") if part]
-
-    def _handler_options(self, *args, **kwargs):
-        return Response(status=204)
