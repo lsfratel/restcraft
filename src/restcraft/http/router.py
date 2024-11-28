@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from types import MethodType
+from collections.abc import Callable
 from typing import Any
 
 from restcraft.exceptions import MethodNotAllowedException, NotFoundException
@@ -30,12 +30,24 @@ def is_dynamic(segment: str, prefix="<", suffix=">"):
 
 
 class Router:
+    """A router for handling HTTP requests."""
+
     def __init__(self, prefix: str = ""):
         self.root: Node = Node()
         self.prefix: str = prefix.rstrip("/")
         self.dynamic_key = ":restcraft:dynamic:"
+        self.handlers = []
 
     def add_route(self, path: str, view: object | type):
+        """Registers a route for a given path and view.
+
+        Args:
+            path: The path to register. This path may contain dynamic segments.
+            view: The view object or class to register.
+
+        Raises:
+            RuntimeError: If a conflicting route is detected.
+        """
         node = self.root
         full_path = f"{self.prefix}{path}"
         segments = self._split_path(full_path)
@@ -73,7 +85,23 @@ class Router:
         self,
         method: str,
         path: str,
-    ) -> tuple[MethodType, dict[str, Any], dict[str, str]]:
+    ) -> tuple[Callable, dict[str, Any], dict[str, str]]:
+        """Finds the view handler for a given method and path.
+
+        Args:
+            method: The HTTP method.
+            path: The path to find the view for.
+
+        Returns:
+            A tuple containing the view handler, the metadata associated with the
+                view, and the parameters extracted from the path.
+
+        Raises:
+            NotFoundException: If a matching route is not found.
+            MethodNotAllowedException: If the method is not supported by the
+                matched route.
+        """
+
         node, params = self._find_node(path)
         if node is None:
             raise NotFoundException
@@ -94,9 +122,33 @@ class Router:
         raise MethodNotAllowedException
 
     def merge(self, other_router: Router):
+        """Merges the routes of another router into this one.
+
+        This method merges the routes of `other_router` into this router. It
+        recursively traverses the nodes of both routers and merges them based on
+        their paths. If a node with the same path already exists in this router,
+        it will be replaced by the node from `other_router`.
+
+        Args:
+            other_router: The router whose routes should be merged into this one.
+        """
+
         self._merge_nodes(self.root, other_router.root)
 
     def _find_node(self, path: str):
+        """Finds a node in the router tree by path.
+
+        This method traverses the router tree based on the given path and
+        returns the corresponding node and any matched URL parameters.
+
+        Args:
+            path: The path to find the node for.
+
+        Returns:
+            A tuple of the node and a dictionary of any matched URL parameters.
+            If the path is not found, the node is None.
+        """
+
         node = self.root
         segments = self._split_path(path)
         params: dict[str, str] = {}
@@ -118,14 +170,37 @@ class Router:
         return node, params
 
     def _register_view_handlers(self, node: Node, view: object):
+        """Registers all view handlers in the given node.
+
+        This method iterates over all extracted metadata and handlers from the given
+        view object and registers them in the given node. It also keeps track of all
+        registered handlers in the `handlers` list.
+
+        Args:
+            node (Node): The node to register the handlers in.
+            view (object): The view object to extract handlers and metadata from.
+        """
+
         for metadata, handler in extract_metadata(view):
             for verb in metadata["methods"]:
+                self.handlers.append(handler)
                 node.handlers[verb] = {
                     "handler": handler,
                     "metadata": metadata,
                 }
 
     def _merge_nodes(self, node: Node, other: Node):
+        """Merges two nodes in the router tree.
+
+        This method recursively merges the two nodes. If a node with the same
+        path already exists in the first node, it will be replaced by the
+        corresponding node from the second node.
+
+        Raises:
+            RuntimeError: If a node with the same path already exists in the
+                first node and has a view registered.
+        """
+
         if node.view and other.view:
             raise RuntimeError(
                 "Conflicting routes during merge of "
@@ -154,4 +229,17 @@ class Router:
 
     @classmethod
     def _split_path(cls, path: str) -> list[str]:
+        """Splits a path into a list of parts.
+
+        This function splits a path into a list of strings, ignoring empty
+        parts. This is used to split the path part of a URL into the
+        individual parts that are compared against the router tree.
+
+        Args:
+            path: The path to split.
+
+        Returns:
+            A list of strings, where each string is a part of the path.
+        """
+
         return [part for part in path.split("/") if part]

@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import traceback
-from collections.abc import Callable, Iterable
-from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from restcraft.exceptions import RestCraftException
-from restcraft.http import JSONResponse, Request, Router
+from restcraft.http import JSONResponse, Request, Response, Router
+from restcraft.plugin import PluginManager
 
 if TYPE_CHECKING:
-    from restcraft.http import Response
+    from collections.abc import Callable, Iterable
+    from types import ModuleType
+    from typing import Any
+
     from restcraft.plugin import Plugin
 
 
@@ -18,7 +20,7 @@ class RestCraft:
         self.router = Router()
         self.config = config
         self.exceptions: dict[type[Exception], Callable] = {}
-        self.plugins: list[Plugin] = []
+        self.plugin_manager = PluginManager(self)
 
         self.register_exception(Exception)(self._default_exception_handler)
 
@@ -33,8 +35,10 @@ class RestCraft:
         return wrapper
 
     def register_plugin(self, plugin: Plugin):
-        self.plugins.append(plugin)
-        plugin.setup(self)
+        self.plugin_manager.register(plugin)
+
+    def unregister_plugin(self, plugin: Plugin | str):
+        self.plugin_manager.unregister(plugin)
 
     def __call__(
         self, environ: dict[str, Any], start_response: Callable
@@ -45,8 +49,18 @@ class RestCraft:
         req_method = environ.get("REQUEST_METHOD", "GET")
 
         try:
-            handler, _, params = self.router.dispatch(req_method, req_path)
-            response = handler(**(params or {}))
+            dispatcher = self.plugin_manager.before_route(self.router.dispatch)
+            if isinstance(dispatcher, Response):
+                response = dispatcher
+            else:
+                handler, metadata, params = dispatcher(req_method, req_path)
+                handler = self.plugin_manager.before_handler(handler, metadata)
+                if isinstance(handler, Response):
+                    response = handler
+                else:
+                    response = handler(**(params or {}))
+            if not isinstance(response, Response):
+                raise TypeError("Handler must return a Response object.")
         except Exception as e:
             response = self._handle_exception(environ, e)
         finally:

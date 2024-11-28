@@ -1,4 +1,4 @@
-from .cors import CORSPlugin
+from .cors_plugin import CORSPlugin
 
 __all__ = [
     "CORSPlugin",

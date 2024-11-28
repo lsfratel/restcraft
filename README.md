@@ -156,7 +156,7 @@ Extend functionality using plugins. Plugins in RestCraft are middleware-like com
 To register a plugin, use the `register_plugin` method of the `RestCraft` application:
 
 ```python
-from restcraft.contrib.plugins.cors import CORSPlugin
+from restcraft.contrib.plugins.cors_plugin import CORSPlugin
 
 plugin = CORSPlugin(allow_origins=["http://example.com"])
 app.register_plugin(plugin)
@@ -194,7 +194,7 @@ class MyView:
 
 #### Writing Your Own Plugin
 
-To create a custom plugin, subclass the `Plugin` class and implement the `apply` method:
+To create a custom plugin, subclass the `Plugin` class and implement the `before_handler` or `before_route` method:
 
 ```python
 from restcraft.plugin import Plugin
@@ -202,9 +202,9 @@ from restcraft.plugin import Plugin
 class CustomHeaderPlugin(Plugin):
     name = "custom_header_plugin"
 
-    def apply(self, callback, metadata):
+    def before_handler(self, handler, metadata):
         def wrapper(*args, **kwargs):
-            response = callback(*args, **kwargs)
+            response = handler(*args, **kwargs)
             response.headers["X-Custom-Header"] = "My Custom Value"
             return response
         return wrapper

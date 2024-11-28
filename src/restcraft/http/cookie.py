@@ -9,6 +9,22 @@ from typing import Any
 
 
 def make_expires(date: datetime | int):
+    """Convert a datetime or integer to a GMT-formatted string.
+
+    If date is a datetime, it is formatted as a GMT-formatted string.
+    If date is an integer, it is interpreted as a number of seconds
+    from the current time and formatted as a GMT-formatted string.
+
+    Args:
+        date: A datetime or integer.
+
+    Returns:
+        A GMT-formatted string.
+
+    Raises:
+        ValueError: If date is not a datetime or integer.
+    """
+
     if isinstance(date, datetime):
         return date.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
     elif isinstance(date, int):
@@ -20,6 +36,19 @@ def make_expires(date: datetime | int):
 
 
 class Cookie:
+    """A class for managing HTTP cookies with optional signing for security.
+
+    This class allows for creating, signing, verifying, serializing, and parsing
+    cookies. It supports options such as path, max age, same site policy, and
+    security features like HttpOnly and Secure flags. Signing and verification
+    are based on HMAC with SHA-256 using provided secrets.
+
+    Attributes:
+        name: The name of the cookie.
+        options: A dictionary of cookie options including path, max age,
+                 same site policy, and security flags.
+    """
+
     def __init__(self, name: str, options: dict[str, Any] = {}):
         self.name = name
         self.options = {
@@ -37,17 +66,47 @@ class Cookie:
                 del self.options["secrets"]
 
     def _sign(self, data: str, secret: str):
+        """Generate a signature for the given data using a secret.
+
+        Args:
+            data: The data string to sign.
+            secret: The secret key for generating the signature.
+
+        Returns:
+            A base64-encoded signature string.
+        """
+
         signature = hmac.new(secret.encode(), data.encode(), hashlib.sha256).digest()
         return base64.urlsafe_b64encode(signature).decode()
 
     def _verify(self, data: str, signature: str):
+        """Verify if the signature matches any of the secrets.
+
+        Args:
+            data: The data string whose signature needs verification.
+            signature: The signature to verify against.
+
+        Returns:
+            True if the signature is valid, otherwise False.
+        """
+
         for secret in self.options["secrets"]:
-            expected_signatue = self._sign(data, secret)
-            if hmac.compare_digest(expected_signatue, signature):
+            expected_signature = self._sign(data, secret)
+            if hmac.compare_digest(expected_signature, signature):
                 return True
         return False
 
     def serialize(self, data: Any, overrides: dict[str, Any] = {}):
+        """Serialize the data into a cookie string with optional overrides.
+
+        Args:
+            data: The data to serialize into the cookie.
+            overrides: A dictionary of options to override the default configurations.
+
+        Returns:
+            The serialized cookie string ready for HTTP headers.
+        """
+
         options = {**self.options, **overrides}
 
         new_data = json.dumps(data)
@@ -81,6 +140,15 @@ class Cookie:
         return cookie.output(header="", sep="").strip()
 
     def parse(self, header: str | None):
+        """Parse the cookie header to retrieve the stored data.
+
+        Args:
+            header: The cookie header string from the HTTP request.
+
+        Returns:
+            The deserialized data if the cookie is valid, otherwise None.
+        """
+
         cookie = SimpleCookie(header)
 
         if self.name not in cookie:

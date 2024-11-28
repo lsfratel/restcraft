@@ -1,10 +1,13 @@
 import os
 from email.message import Message
 from enum import Enum
-from tempfile import NamedTemporaryFile, _TemporaryFileWrapper
-from typing import Any, Literal
+from tempfile import NamedTemporaryFile
+from typing import TYPE_CHECKING, Any, Literal
 
 from restcraft.exceptions import RestCraftException
+
+if TYPE_CHECKING:
+    from tempfile import _TemporaryFileWrapper
 
 
 class ParserState(Enum):
@@ -29,6 +32,16 @@ FormFields = dict[str, list[str]]
 
 
 class MultipartParser:
+    """Parser for handling multipart form data.
+
+    This class is responsible for parsing multipart form data from HTTP requests.
+    It extracts form fields and files, supporting various content types and encoding
+    options. The parser handles different states of parsing, such as processing
+    headers, body, and file content. It provides methods to retrieve boundary and
+    content length information, and raises exceptions for errors like missing headers
+    or exceeding body size limits.
+    """
+
     def __init__(
         self,
         environ: dict[str, Any],
@@ -56,6 +69,16 @@ class MultipartParser:
 
     @property
     def boundary(self) -> str:
+        """Retrieve the boundary parameter from the Content-Type header.
+
+        Returns:
+            str: The boundary string used for multipart form data.
+
+        Raises:
+            RestCraftException: If the boundary parameter is missing from
+            the Content-Type header.
+        """
+
         ctype = self._environ.get("CONTENT_TYPE", "")
 
         message = Message()
@@ -79,9 +102,22 @@ class MultipartParser:
 
     @property
     def content_length(self) -> int:
+        """Retrieve the Content-Length header from the request environment.
+
+        Returns:
+            int: The value of the Content-Length header, or -1 if the header is
+            missing.
+        """
+
         return int(self._environ.get("CONTENT_LENGTH", -1))
 
     def parse(self):
+        """Parse the request body.
+
+        Raises:
+            RestCraftException: if the request body is too large or invalid
+        """
+
         if self.content_length < 0:
             raise RestCraftException(
                 self._error_message,
@@ -105,6 +141,23 @@ class MultipartParser:
         return self.forms, self.files
 
     def _detect_delimiter(self, buffer: bytes, boundary: bytes, blength: int):
+        """Detect the line delimiter used in the request body.
+
+        Given a buffer and a boundary, finds the first occurrence of the
+        boundary and determines whether the line delimiter is CRLF or LF.
+
+        Args:
+            buffer: The buffer to search in.
+            boundary: The boundary to search for.
+            blength: The length of the boundary.
+
+        Returns:
+            The line delimiter used in the request body.
+
+        Raises:
+            ValueError: If the line delimiter cannot be determined.
+        """
+
         idx = buffer.find(boundary)
 
         if idx < 0:
@@ -118,6 +171,12 @@ class MultipartParser:
             raise ValueError("Unable to determine line delimiter.")
 
     def _cleanup(self):
+        """Clean up resources used during parsing.
+
+        This method closes and removes the temporary file, clears temporary
+        fields and content, and resets form and file storage.
+        """
+
         if self._cstream is not None:
             if not self._cstream.closed:
                 self._cstream.close()
@@ -132,6 +191,13 @@ class MultipartParser:
         self.files = {}
 
     def _create_tempfile(self):
+        """Create a temporary file with a predefined prefix and suffix.
+
+        Returns:
+            _TemporaryFileWrapper: A named temporary file object with the specified
+            prefix and suffix, set to not be deleted automatically.
+        """
+
         prefix = "restcraft-"
         suffix = ".tmp"
 
@@ -142,6 +208,21 @@ class MultipartParser:
         )
 
     def _on_start(self, buffer: bytes, boundary: bytes, blength: int):
+        """Handle the initial parsing state when the boundary is detected.
+
+        This method checks if the boundary is present in the buffer and, if found,
+        updates the buffer to start after the boundary and changes the parser state
+        to HEADER.
+
+        Args:
+            buffer: The byte buffer containing the multipart data.
+            boundary: The boundary string used to delineate parts in the multipart data.
+            blength: The length of the boundary.
+
+        Returns:
+            The updated buffer, starting after the boundary.
+        """
+
         if (idx := buffer.find(boundary)) >= 0:
             buffer = buffer[idx + blength :]
             self._state = ParserState.HEADER
@@ -149,6 +230,20 @@ class MultipartParser:
         return buffer
 
     def _on_header(self, buffer: bytes):
+        """Handle the header parsing state when the delimiter is detected.
+
+        This method checks if the delimiter is present in the buffer and, if found,
+        partitions the buffer into headers and the remaining data. It then checks if
+        the headers contain a filename parameter and sets the parser state accordingly.
+        Finally, it processes the headers and returns the remaining buffer.
+
+        Args:
+            buffer: The byte buffer containing the multipart data.
+
+        Returns:
+            The updated buffer, starting after the delimiter.
+        """
+
         delimiter = self._delimiter.value * 2
 
         if buffer.find(delimiter) >= 0:
@@ -164,6 +259,19 @@ class MultipartParser:
         return buffer
 
     def _on_body(self, buffer: bytes, boundary: bytes):
+        """Handle the body parsing state when the delimiter is detected.
+
+        This method checks if the delimiter is present in the buffer and, if found,
+        accumulates the body content and changes the parser state to BODY_END.
+
+        Args:
+            buffer: The byte buffer containing the multipart data.
+            boundary: The boundary string used to delineate parts in the multipart data.
+
+        Returns:
+            The updated buffer, starting after the delimiter.
+        """
+
         offset = 2 if self._delimiter == DelimiterEnum.CRLF else 1
 
         if (idx := buffer.find(boundary)) >= 0:
@@ -174,6 +282,12 @@ class MultipartParser:
         return buffer
 
     def _on_body_end(self):
+        """Handle the body end parsing state.
+
+        This method accumulates the body content, decodes it to a string, and adds it
+        to the forms dictionary. It also resets the content and field dictionaries.
+        """
+
         self._state = ParserState.END
 
         name = self._cfield["name"]
@@ -188,6 +302,22 @@ class MultipartParser:
         self._ccontent = b""
 
     def _on_fbody(self, buffer: bytes, boundary: bytes, blength: int):
+        """Handle the file body parsing state.
+
+        This method writes the file content from the buffer to a temporary file
+        stream until the boundary is detected. It adjusts the state to F_BODY_END
+        when the boundary is found.
+
+        Args:
+            buffer: The byte buffer containing the multipart data.
+            boundary: The boundary string used to delineate parts in the multipart data.
+            blength: The length of the boundary.
+
+        Returns:
+            The updated buffer, starting after the boundary or retaining the last
+            part of the buffer if the boundary isn't found.
+        """
+
         offset = 2 if self._delimiter == DelimiterEnum.CRLF else 1
 
         if self._cstream is None:
@@ -206,6 +336,14 @@ class MultipartParser:
         return buffer
 
     def _on_fbody_end(self):
+        """Handle the end of a file body.
+
+        This method writes any remaining data to the temporary file stream,
+        closes the stream, and adds the file information to the request's files
+        attribute. It resets the state to END and clears the current field and
+        file stream.
+        """
+
         self._state = ParserState.END
 
         if self._cstream is None:
@@ -232,6 +370,20 @@ class MultipartParser:
         self._cstream = None
 
     def _process_headers(self, data: bytes):
+        """Process the headers of a part.
+
+        This method decodes the header data, parses it into individual header fields,
+        and extracts important parameters such as "filename", "content_type", and "name".
+        It raises an exception if the "Content-Disposition" header is missing, as it is
+        required to determine the disposition of the part.
+
+        Args:
+            data: The raw headers data as bytes.
+
+        Raises:
+            RestCraftException: If the "Content-Disposition" header is absent.
+        """
+
         headers = [
             h.strip().decode(self._encoding, self._encoding_errors)
             for h in data.split(self._delimiter.value)
@@ -264,6 +416,16 @@ class MultipartParser:
         )
 
     def _parse(self):
+        """Parse the request body.
+
+        This method reads the request body and parses it. It accumulates the
+        form data and files into the forms and files attributes of the
+        MultipartParser instance.
+
+        Raises:
+            RestCraftException: If the request body is too large or invalid
+        """
+
         boundary = f"--{self.boundary}".encode()
         boundary_end = f"--{self.boundary}--".encode()
         blength = len(boundary)
